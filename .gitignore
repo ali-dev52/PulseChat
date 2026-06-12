@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Environment files
+.env
+.env.local
+server.apis/.env
+client.ui/.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+
+
+
+

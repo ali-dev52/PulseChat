@@ -1,3 +1,4 @@
+import "dotenv/config";
 const PRI = '/api/v1';
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;

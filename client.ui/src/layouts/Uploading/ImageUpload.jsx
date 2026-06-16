@@ -21,7 +21,7 @@ const UploadImage = ({ setFormData }) => {
       try {
         const image = reader.result;
         const { data } = await axios.post(
-          "http://localhost:4321/api/v1/upload-image",
+          `${import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1"}/upload-image`,
           { image }
         );
         const imageUrl = data.Location;
@@ -53,7 +53,7 @@ const UploadImage = ({ setFormData }) => {
 
     try {
       const { data } = await axios.post(
-        "http://localhost:7070/api/v1/delete-image",
+        `${import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1"}/delete-image`,
         file
       );
 

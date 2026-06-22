@@ -16,10 +16,14 @@ import Chatpage from "./screens/Chatpage"
 import { useAuth } from "./context/auth"
 import SplashScreen from "./components/shared/SplashScreen"
 import AboutApp from "./screens/info/AboutApp"
+import { useWebPush } from "./hooks/useWebPush"
 
 const Elecrto = () => {
   const [Auth] = useAuth()
   const [initialLoading, setInitialLoading] = useState(true)
+  
+  // Setup Web Push Subscriptions
+  useWebPush()
   
   const [dark, setDark] = useState(() => {
     // Check local storage or system preference on initial load

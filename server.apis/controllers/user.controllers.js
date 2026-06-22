@@ -312,6 +312,24 @@ const updateProfile = async (req, res) => {
   }
 };
 
+/* 9) Subscribe to Web Push */
+const subscribeToPush = async (req, res) => {
+  try {
+    const id = req.user.id;
+    if (!id) return error("Unauthorized", res);
+
+    const subscription = req.body;
+    
+    await user.findByIdAndUpdate(id, {
+      $push: { pushSubscriptions: subscription }
+    });
+
+    success("Subscribed to push notifications", res);
+  } catch (err) {
+    catchErr(err, res);
+  }
+};
+
 
 export {
   preSignup,
@@ -322,5 +340,6 @@ export {
   resetPassword,
   showAllUsers,
   fetchLoggedUser,
-  updateProfile
+  updateProfile,
+  subscribeToPush
 }

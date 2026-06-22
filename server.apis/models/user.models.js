@@ -84,6 +84,10 @@ const userSchema = new Schema({
   phonenumber: {
     type: Number,
     default: ""
+  },
+  pushSubscriptions: {
+    type: [Object],
+    default: []
   }
 }, { timestamps: true })
 

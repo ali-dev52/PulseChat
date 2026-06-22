@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import api from "../services/api";
 import { useAuth } from "../context/auth";
 import { useSocket } from "./useSocket";
+import { toast } from "react-toastify";
 
 export const useChat = (selectedChatId = null) => { // ✅ accepts selectedChatId
   const [conversations, setConversations] = useState([]);
@@ -69,20 +70,58 @@ export const useChat = (selectedChatId = null) => { // ✅ accepts selectedChatI
   }, [loggedInUserId]);
 
   useEffect(() => {
-    if (loggedInUserId) fetchConversations();
+    if (loggedInUserId) {
+      fetchConversations();
+      // Ask user for permission to send desktop notifications
+      if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+        Notification.requestPermission();
+      }
+    }
   }, [loggedInUserId, fetchConversations]);
 
   useEffect(() => {
     if (!socket) return;
 
     const handleNewMessage = (msg) => {
-      setConversations((prev) =>
-        prev
+      setConversations((prev) => {
+        const isFromOther = String(msg.sender?._id) !== String(loggedInUserIdRef.current);
+        const isCurrentlyOpen = String(msg.conversationId) === String(selectedChatIdRef.current);
+
+        if (isFromOther && !isCurrentlyOpen) {
+          const conv = prev.find((c) => String(c._id) === String(msg.conversationId));
+          const senderName = conv?.user?.full_name || conv?.user?.name || "Someone";
+
+          // 1. Always show an in-app popup (if user is looking at another page/chat)
+          toast.info(`New message from ${senderName}: ${msg.text}`, {
+            position: "top-right",
+            autoClose: 4000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: "colored",
+          });
+
+          // 2. Trigger Native Browser Notification (for when the browser is minimized or tab is hidden)
+          if ("Notification" in window && Notification.permission === "granted") {
+            try {
+              const notification = new Notification(`New message from ${senderName}`, {
+                body: msg.text,
+                icon: conv?.user?.avatar || "/favicon.png"
+              });
+
+              notification.onclick = () => {
+                window.focus();
+              };
+            } catch (err) {
+              console.error("Native notification failed:", err);
+            }
+          }
+        }
+
+        return prev
           .map((conv) => {
             if (String(conv._id) !== String(msg.conversationId)) return conv;
-            const isFromOther = String(msg.sender?._id) !== String(loggedInUserIdRef.current);
-            // ✅ don't increment unread if chat is currently open
-            const isCurrentlyOpen = String(msg.conversationId) === String(selectedChatIdRef.current);
             return {
               ...conv,
               lastMessage: {
@@ -102,8 +141,8 @@ export const useChat = (selectedChatId = null) => { // ✅ accepts selectedChatI
             const aTime = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt) : 0;
             const bTime = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt) : 0;
             return bTime - aTime;
-          })
-      );
+          });
+      });
     };
 
     const handleConversationUpdated = (msg) => {

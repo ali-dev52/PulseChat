@@ -1,5 +1,7 @@
 import Message from "../models/message.js";
 import Conversation from "../models/conversation.js";
+import User from "../models/user.models.js";
+import webpush from "../config/webpush.js";
 import { io, onlineUsers } from "../server.js";
 
 // GET /api/v1/messages/:conversationId
@@ -93,6 +95,49 @@ export const sendMessage = async (req, res) => {
             status: "delivered",
           });
         }
+      }
+      
+      // ✅ Web Push Notification
+      try {
+        const receiverUser = await User.findById(receiverId);
+        if (receiverUser && receiverUser.pushSubscriptions && receiverUser.pushSubscriptions.length > 0) {
+          // get sender details for notification
+          const senderUser = await User.findById(senderId);
+          const senderName = senderUser?.full_name || "Someone";
+          const senderAvatar = senderUser?.profilepicture || "/favicon.png";
+
+          const payload = JSON.stringify({
+            title: `New message from ${senderName}`,
+            body: text,
+            icon: senderAvatar,
+            url: `/?chat=${conversationId}`
+          });
+
+          // Send to all registered devices
+          const validSubscriptions = [];
+          for (const sub of receiverUser.pushSubscriptions) {
+            try {
+              await webpush.sendNotification(sub, payload);
+              validSubscriptions.push(sub);
+            } catch (err) {
+              // 410 means subscription is no longer valid (e.g., user revoked permission)
+              if (err.statusCode === 410 || err.statusCode === 404) {
+                console.log("Removing expired push subscription");
+              } else {
+                console.error("Web push error:", err);
+                validSubscriptions.push(sub); // keep if it's a temp error
+              }
+            }
+          }
+
+          // update db if any subscriptions were removed
+          if (validSubscriptions.length !== receiverUser.pushSubscriptions.length) {
+            receiverUser.pushSubscriptions = validSubscriptions;
+            await receiverUser.save();
+          }
+        }
+      } catch (err) {
+        console.error("Failed to send push notification:", err);
       }
     }
 

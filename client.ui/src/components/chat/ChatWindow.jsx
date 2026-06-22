@@ -187,7 +187,6 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
   };
 
   return (
-    <AnimatedReveal animationKey={conversation._id}>
       <motion.div 
         animate={pulseActive ? {
           scale: [1, 1.03, 0.98, 1.02, 0.99, 1],
@@ -608,7 +607,6 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
         />
         )}
       </motion.div>
-    </AnimatedReveal>
   );
 };
 

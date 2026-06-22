@@ -52,10 +52,10 @@ const ChatItem = ({ conv, isActive, onClick }) => {
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-center mb-1">
-          <span className={`text-base font-medium truncate max-w-[150px] ${isActive ? 'text-primary-700 dark:text-primary-400' : 'text-slate-800 dark:text-slate-200 group-hover:text-primary-600 dark:group-hover:text-white'}`}>
+        <div className="flex justify-between items-center gap-2 mb-1">
+          <span className={`text-base font-medium flex-1 min-w-0 truncate ${isActive ? 'text-primary-700 dark:text-primary-400' : 'text-slate-800 dark:text-slate-200 group-hover:text-primary-600 dark:group-hover:text-white'}`}>
             {user?.full_name || user?.name || "Unknown"}
-            {isFavorite && <Star className="inline w-3 h-3 ml-1 text-yellow-400 fill-yellow-400" />}
+            {isFavorite && <Star className="inline w-3 h-3 ml-1 text-yellow-400 fill-yellow-400 flex-shrink-0" />}
           </span>
           <span className={`text-[11px] font-medium flex-shrink-0 ${
             unread > 0 ? "text-primary-500" : "text-slate-500 dark:text-slate-500"
@@ -64,18 +64,20 @@ const ChatItem = ({ conv, isActive, onClick }) => {
           </span>
         </div>
 
-        <div className="flex justify-between items-center">
-          <p className={`text-sm truncate max-w-[160px] flex items-center gap-1.5 ${
+        <div className="flex justify-between items-center gap-2">
+          <p className={`text-sm flex-1 min-w-0 truncate flex items-center gap-1.5 ${
             unread > 0 ? "text-slate-900 dark:text-white font-medium" : "text-slate-500 dark:text-slate-400"
           }`}>
-            <MessageStatusIcon
-              status={lastMessage?.status}
-              isMyMessage={isMyMessage}
-            />
-            {preview}
+            <span className="flex-shrink-0">
+              <MessageStatusIcon
+                status={lastMessage?.status}
+                isMyMessage={isMyMessage}
+              />
+            </span>
+            <span className="truncate">{preview}</span>
           </p>
           {unread > 0 && (
-            <span className="bg-primary-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center flex-shrink-0 ml-2 shadow-sm">
+            <span className="bg-primary-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center flex-shrink-0 shadow-sm">
               {unread > 99 ? "99+" : unread}
             </span>
           )}

@@ -15,6 +15,7 @@ users.get("/",auth.showAllUsers)
 /* protected Route */
 users.get("/fetch-logged-user", protectRoute, auth.fetchLoggedUser)
 users.put("/profile", protectRoute, auth.updateProfile)
+users.post("/push-subscribe", protectRoute, auth.subscribeToPush)
 
 
 export default users;

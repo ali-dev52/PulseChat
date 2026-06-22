@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Info, Zap, ShieldCheck, Cpu, Users, Globe, MessageSquare, Mail, Phone, MapPin, ExternalLink, Heart } from 'lucide-react';
+import { ArrowLeft, Info, Zap, ShieldCheck, Cpu, Users, Globe, MessageSquare, Mail, Phone, MapPin, ExternalLink, Heart, Server, Database, Code2, Rocket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const AboutApp = () => {
@@ -42,6 +42,43 @@ const AboutApp = () => {
           <p className="text-xl md:text-2xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto leading-relaxed">
             PulseChat provides a seamless, lightning-fast, and deeply immersive messaging experience designed for the modern web.
           </p>
+        </motion.section>
+
+        {/* --- SYSTEM INTRO SECTION --- */}
+        <motion.section 
+          initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn}
+          className="my-16 relative p-8 md:p-12 rounded-[2.5rem] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden shadow-2xl shadow-primary-500/20"
+        >
+          {/* Decorative background effects */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/30 blur-[80px] rounded-full pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/30 blur-[80px] rounded-full pointer-events-none" />
+          
+          <div className="relative z-10 text-center mb-12">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-primary-300 text-sm font-bold uppercase tracking-widest mb-6">
+              <Rocket className="w-4 h-4" /> System Architecture
+            </span>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">Built on the MERN Stack</h2>
+            <p className="text-lg text-slate-300 max-w-2xl mx-auto">
+              PulseChat is engineered using industry-leading technologies to deliver unparalleled performance, security, and real-time reliability.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-6 relative z-10">
+            {[
+              { title: "MongoDB", icon: Database, color: "text-green-400", bg: "bg-green-400/10", desc: "NoSQL Database" },
+              { title: "Express.js", icon: Server, color: "text-slate-300", bg: "bg-slate-300/10", desc: "Backend Framework" },
+              { title: "React", icon: Code2, color: "text-cyan-400", bg: "bg-cyan-400/10", desc: "Frontend UI" },
+              { title: "Node.js", icon: Cpu, color: "text-green-500", bg: "bg-green-500/10", desc: "Runtime Env" }
+            ].map((tech, idx) => (
+              <motion.div key={idx} variants={fadeIn} className="flex flex-col items-center p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors">
+                <div className={`w-16 h-16 rounded-2xl ${tech.bg} flex items-center justify-center mb-4`}>
+                  <tech.icon className={`w-8 h-8 ${tech.color}`} />
+                </div>
+                <h3 className="text-xl font-bold">{tech.title}</h3>
+                <p className="text-sm text-slate-400 font-medium">{tech.desc}</p>
+              </motion.div>
+            ))}
+          </div>
         </motion.section>
 
         <motion.section 

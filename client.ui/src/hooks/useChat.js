@@ -20,6 +20,15 @@ export const useChat = (selectedChatId = null) => { // ✅ accepts selectedChatI
 
   useEffect(() => {
     selectedChatIdRef.current = selectedChatId; // ✅ always fresh in socket handler
+    
+    // Auto-close desktop notifications for this chat when we open it
+    if (selectedChatId && "serviceWorker" in navigator) {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.getNotifications({ tag: selectedChatId }).then((notifications) => {
+          notifications.forEach((n) => n.close());
+        });
+      });
+    }
   }, [selectedChatId]);
 
   const fetchConversations = useCallback(async () => {
@@ -102,21 +111,7 @@ export const useChat = (selectedChatId = null) => { // ✅ accepts selectedChatI
             theme: "colored",
           });
 
-          // 2. Trigger Native Browser Notification (for when the browser is minimized or tab is hidden)
-          if ("Notification" in window && Notification.permission === "granted") {
-            try {
-              const notification = new Notification(`New message from ${senderName}`, {
-                body: msg.text,
-                icon: conv?.user?.avatar || "/favicon.png"
-              });
-
-              notification.onclick = () => {
-                window.focus();
-              };
-            } catch (err) {
-              console.error("Native notification failed:", err);
-            }
-          }
+          // (Native notifications are now entirely handled by service-worker.js via Web Push)
         }
 
         return prev

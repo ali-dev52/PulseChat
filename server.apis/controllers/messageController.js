@@ -110,7 +110,8 @@ export const sendMessage = async (req, res) => {
             title: `New message from ${senderName}`,
             body: text,
             icon: senderAvatar,
-            url: `/?chat=${conversationId}`
+            url: `/?chat=${conversationId}`,
+            conversationId: conversationId.toString()
           });
 
           // Send to all registered devices

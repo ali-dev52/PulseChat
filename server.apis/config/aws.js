@@ -20,5 +20,4 @@ export const AWSS3 = new S3(awsConfig)
 
 
 export const sender_email = "Electro Saman<alimehmood.dev@gmail.com>"
-export const CLIENT_URL = "http://localhost:81"
-
+export const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:81"

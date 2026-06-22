@@ -46,8 +46,8 @@ const preSignup = async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: "Gmail",
       auth: {
-        user: "alimehmood.dev@gmail.com",
-        pass: "rbmz azgn pcov zsqn", // or app password if 2FA is on
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS, // or app password if 2FA is on
       },
     });
     await transporter.sendMail({
@@ -145,8 +145,8 @@ const forgetPassword = async (req, res) => {
     const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "alimehmood.dev@gmail.com", // your Gmail
-    pass: 'rbmz azgn pcov zsqn', // App Password (NOT normal password)
+    user: process.env.EMAIL_USER, // your Gmail
+    pass: process.env.EMAIL_PASS, // App Password (NOT normal password)
   },
 });
 await transporter.sendMail({
@@ -320,6 +320,12 @@ const subscribeToPush = async (req, res) => {
 
     const subscription = req.body;
     
+    if (subscription && subscription.endpoint) {
+      await user.findByIdAndUpdate(id, {
+        $pull: { pushSubscriptions: { endpoint: subscription.endpoint } }
+      });
+    }
+
     await user.findByIdAndUpdate(id, {
       $push: { pushSubscriptions: subscription }
     });

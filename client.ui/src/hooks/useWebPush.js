@@ -4,7 +4,7 @@ import { useAuth } from "../context/auth";
 import { toast } from "react-toastify";
 
 // Replace with the VAPID_PUBLIC_KEY from the server
-const PUBLIC_VAPID_KEY = "BM8roNvRt-loHBY71YOPSC1N7OteNGrSkQtcQx5xIooJro9aymMpKQ1z6yViD0mtsII-GRryLMhLBXiNCg0D2pE";
+const PUBLIC_VAPID_KEY = import.meta.env.VITE_PUBLIC_VAPID_KEY;
 
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - base64String.length % 4) % 4);

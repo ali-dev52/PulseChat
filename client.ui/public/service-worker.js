@@ -9,12 +9,29 @@ self.addEventListener("push", (event) => {
       icon: data.icon || "/favicon.png",
       badge: "/favicon.png",
       vibrate: [100, 50, 100],
+      tag: data.conversationId,
       data: {
         url: data.url || "/",
+        conversationId: data.conversationId,
       },
     };
 
-    event.waitUntil(self.registration.showNotification(data.title, options));
+    event.waitUntil(
+      clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+        let isFocused = false;
+        for (let i = 0; i < windowClients.length; i++) {
+          if (windowClients[i].focused) {
+            isFocused = true;
+            break;
+          }
+        }
+
+        // Only show notification if the user isn't actively looking at the app
+        if (!isFocused) {
+          return self.registration.showNotification(data.title, options);
+        }
+      })
+    );
   } catch (err) {
     console.error("Push event error:", err);
   }

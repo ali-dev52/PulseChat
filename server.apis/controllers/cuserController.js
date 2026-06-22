@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import { CLIENT_URL } from "../config/aws.js";
+
 // ✅ Get All Users (except logged-in user)
 export const getUsers = async (req, res) => {
 
@@ -20,7 +22,7 @@ export const getUsers = async (req, res) => {
 
 
 
-const JWT_SECRET = "secret123"; // later move to .env
+const JWT_SECRET = process.env.JWT_SECRET || "secret123";
 
 // ✅ Register
 export const register = async (req, res) => {
@@ -46,11 +48,11 @@ export const register = async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: "Gmail",
       auth: {
-        user: "alimehmood.dev@gmail.com",
-        pass: "rbmz azgn pcov zsqn", // or app password if 2FA is on
+        user: process.env.EMAIL_USER, // your Gmail
+        pass: process.env.EMAIL_PASS, // App Password (NOT normal password) if 2FA is on
       },
     });
-    const verificationUrl = `http://localhost:81/verify/${verificationToken}`;
+    const verificationUrl = `${CLIENT_URL}/verify/${verificationToken}`;
     await transporter.sendMail({
       from: "no-reply@chatme.com",
       to: email,

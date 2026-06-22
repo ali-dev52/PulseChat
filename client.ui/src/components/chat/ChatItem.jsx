@@ -33,9 +33,9 @@ const ChatItem = ({ conv, isActive, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-4 px-6 py-4 cursor-pointer border-b border-slate-100 dark:border-slate-800/50 transition-all duration-300 group ${
+      className={`flex items-center gap-3 sm:gap-4 px-3 sm:px-6 py-3 sm:py-4 cursor-pointer border-b border-slate-100 dark:border-slate-800/50 transition-all duration-300 group ${
         isActive 
-          ? "bg-primary-50 dark:bg-primary-500/10 border-l-4 border-l-primary-500 pl-[20px]" 
+          ? "bg-primary-50 dark:bg-primary-500/10 border-l-4 border-l-primary-500 pl-[8px] sm:pl-[20px]" 
           : "hover:bg-slate-50 dark:hover:bg-slate-800/50 border-l-4 border-l-transparent"
       }`}
     >
@@ -57,7 +57,7 @@ const ChatItem = ({ conv, isActive, onClick }) => {
             {user?.full_name || user?.name || "Unknown"}
             {isFavorite && <Star className="inline w-3 h-3 ml-1 text-yellow-400 fill-yellow-400 flex-shrink-0" />}
           </span>
-          <span className={`text-[11px] font-medium flex-shrink-0 ${
+          <span className={`text-[10px] sm:text-[11px] font-medium flex-shrink-0 ${
             unread > 0 ? "text-primary-500" : "text-slate-500 dark:text-slate-500"
           }`}>
             {time}

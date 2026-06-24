@@ -100,6 +100,27 @@ export const useChat = (selectedChatId = null) => { // ✅ accepts selectedChatI
           const conv = prev.find((c) => String(c._id) === String(msg.conversationId));
           const senderName = conv?.user?.full_name || conv?.user?.name || "Someone";
 
+          // Play notification sound
+          try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(800, audioCtx.currentTime); // 800Hz beep
+            
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); 
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+            
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.5);
+          } catch (e) {
+            console.log("Audio play failed:", e);
+          }
+
           // 1. Always show an in-app popup (if user is looking at another page/chat)
           toast.info(`New message from ${senderName}: ${msg.text}`, {
             position: "top-right",

@@ -95,7 +95,7 @@ const Chatpage = ({ toggleDark }) => {
 
       {activeTab === 'Chats' ? (
         <>
-          <div className={`flex h-full w-full md:w-auto shrink-0 z-20 transition-transform ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
+          <div className={`flex h-full flex-1 md:flex-none md:w-auto shrink-0 z-20 transition-transform ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
             <ChatList
               conversations={conversations}
               loading={loading}

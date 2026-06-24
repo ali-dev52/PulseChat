@@ -107,7 +107,7 @@ export const sendMessage = async (req, res) => {
           const senderAvatar = senderUser?.profilepicture || "/favicon.png";
 
           const payload = JSON.stringify({
-            title: `New message from ${senderName}`,
+            title: `${senderName}`,
             body: text,
             icon: senderAvatar,
             url: `/?chat=${conversationId}`,

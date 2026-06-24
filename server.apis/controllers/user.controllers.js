@@ -321,9 +321,10 @@ const subscribeToPush = async (req, res) => {
     const subscription = req.body;
     
     if (subscription && subscription.endpoint) {
-      await user.findByIdAndUpdate(id, {
-        $pull: { pushSubscriptions: { endpoint: subscription.endpoint } }
-      });
+      await user.updateMany(
+        {},
+        { $pull: { pushSubscriptions: { endpoint: subscription.endpoint } } }
+      );
     }
 
     await user.findByIdAndUpdate(id, {

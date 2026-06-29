@@ -10,7 +10,7 @@ import {
   groupMessagesByDate,
 } from "../../utils/chat";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Search, MoreVertical, Paperclip, Smile, Send, Edit2, Trash2, Reply, Check, CheckCheck, AlertCircle, CornerDownRight, X, Phone, Video, Mic, Square, Trash } from "lucide-react";
+import { ArrowLeft, Search, MoreVertical, Paperclip, Smile, Send, Edit2, Trash2, Reply, Check, CheckCheck, AlertCircle, CornerDownRight, X, Phone, Video, Mic, Square, Trash, Image, Download } from "lucide-react";
 import ProfileModal from "../profile/ProfileModal";
 import AnimatedReveal from "../shared/AnimatedReveal";
 import VoicePlayer from "./VoicePlayer";
@@ -66,6 +66,9 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
   const [audioBlob, setAudioBlob] = useState(null);
   const [audioPreviewUrl, setAudioPreviewUrl] = useState(null);
   const [uploadingAudio, setUploadingAudio] = useState(false);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
+  const [imageBase64, setImageBase64] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
@@ -87,6 +90,7 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
     deleteMessage,
     editMessage,
     sendPulse,
+    markAsDownloaded,
   } = useMessages(conversation?._id);
 
   // auto scroll
@@ -248,6 +252,48 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
     });
   };
 
+  const handleDownload = async (msg, type) => {
+    try {
+      const url = type === 'image' ? msg.image : msg.audioUrl;
+      const proxyUrl = `${import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1"}/messages/stream-audio?url=${encodeURIComponent(url)}`;
+      const response = await fetch(proxyUrl);
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = `PulseChat_${type}_${Date.now()}.${type === 'image' ? 'png' : 'webm'}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(objectUrl);
+      
+      // Mark as downloaded if I am not the sender
+      if (String(msg.sender?._id || msg.sender) !== String(loggedInUserId)) {
+        await markAsDownloaded(msg._id);
+      }
+    } catch (err) {
+      console.error("Download failed:", err);
+    }
+  };
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      setImagePreviewUrl(reader.result);
+      setImageBase64(reader.result);
+    };
+    e.target.value = null; // reset input
+  };
+
+  const cancelImage = () => {
+    setImagePreviewUrl(null);
+    setImageBase64(null);
+  };
+
   const formatRecordingTime = (seconds) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, "0");
     const s = (seconds % 60).toString().padStart(2, "0");
@@ -255,9 +301,11 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
   };
 
   const handleSend = async () => {
-    if ((!text.trim() && !audioBlob) || sending || uploadingAudio) return;
+    if ((!text.trim() && !audioBlob && !imageBase64) || sending || uploadingAudio || uploadingImage) return;
     
     let audioUrl = null;
+    let imageUrl = null;
+
     if (audioBlob) {
       setUploadingAudio(true);
       try {
@@ -270,6 +318,19 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
       setUploadingAudio(false);
     }
 
+    if (imageBase64) {
+      setUploadingImage(true);
+      try {
+        const { data } = await api.post("/messages/upload-image", { image: imageBase64 });
+        imageUrl = data.Location;
+      } catch (err) {
+        console.error("Image upload failed", err);
+        setUploadingImage(false);
+        return;
+      }
+      setUploadingImage(false);
+    }
+
     const msg = text.trim();
     const reply = replyTo;
     setText("");
@@ -277,8 +338,10 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
     setAudioBlob(null);
     if (audioPreviewUrl) URL.revokeObjectURL(audioPreviewUrl);
     setAudioPreviewUrl(null);
+    setImageBase64(null);
+    setImagePreviewUrl(null);
     emitStopTyping(otherUser?._id);
-    await sendMessage(msg, reply, audioUrl);
+    await sendMessage(msg, reply, audioUrl, imageUrl);
   };
 
   const handleKeyDown = (e) => {
@@ -426,14 +489,24 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
                           isMe ? "bg-primary-900/30 text-gray-200" : "bg-slate-700/50 text-gray-200"
                         }`}>
                           <p className="text-primary-300 font-medium text-[10px] mb-0.5 tracking-wide flex items-center gap-1">
-                            <svg fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" className="w-3 h-3 opacity-80">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                            </svg>
+                            <Reply className="w-3 h-3 opacity-80" />
                             {String(msg.replyTo.sender?._id || msg.replyTo.sender) === String(loggedInUserId) 
                               ? "You" 
                               : (msg.replyTo.sender?.full_name || "Someone")}
                           </p>
-                          <p className="truncate opacity-90">{msg.replyTo.text}</p>
+                          {msg.replyTo.image ? (
+                            <div className="flex items-center gap-2 mt-1">
+                              <Image className="w-4 h-4 opacity-70" />
+                              <span className="opacity-90 italic text-[11px]">Photo</span>
+                            </div>
+                          ) : msg.replyTo.audioUrl ? (
+                            <div className="flex items-center gap-2 mt-1">
+                              <Mic className="w-4 h-4 opacity-70" />
+                              <span className="opacity-90 italic text-[11px]">Voice Note</span>
+                            </div>
+                          ) : (
+                            <p className="truncate opacity-90">{msg.replyTo.text}</p>
+                          )}
                         </div>
                       )}
 
@@ -483,9 +556,30 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
                           </p>
                         ) : (
                           <>
+                            {msg.image && (
+                              <div className={`${msg.text || msg.audioUrl ? 'mb-2' : 'mb-0'} max-w-[250px] sm:max-w-[300px] relative group`}>
+                                <div className="bg-white dark:bg-slate-900 rounded-lg overflow-hidden border border-white/10 shadow-sm relative">
+                                  <img src={`${import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1"}/messages/stream-audio?url=${encodeURIComponent(msg.image)}`} alt="Attachment" className="w-full" />
+                                </div>
+                                <button
+                                  onClick={() => handleDownload(msg, 'image')}
+                                  className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                  title="Download Image"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
                             {msg.audioUrl && (
-                               <div className={`${msg.text ? 'mb-2' : 'mb-0'} min-w-[200px] sm:min-w-[250px]`}>
+                               <div className={`${msg.text ? 'mb-2' : 'mb-0'} min-w-[200px] sm:min-w-[250px] relative group`}>
                                  <VoicePlayer src={msg.audioUrl} isMe={isMe} />
+                                 <button
+                                   onClick={() => handleDownload(msg, 'audio')}
+                                   className={`absolute top-1/2 -translate-y-1/2 ${isMe ? 'left-0 -translate-x-[120%]' : 'right-0 translate-x-[120%]'} p-1.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-full opacity-0 group-hover:opacity-100 transition-opacity`}
+                                   title="Download Audio"
+                                 >
+                                   <Download className="w-4 h-4" />
+                                 </button>
                                </div>
                             )}
                             {msg.text && <p className="break-words">{msg.text}</p>}
@@ -500,6 +594,11 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
                             {msg.editedAt && <span className="ml-1 opacity-70">(edited)</span>}
                           </span>
                           {isMe && <MessageStatus status={msg.status} />}
+                          {isMe && msg.downloadedBy && msg.downloadedBy.length > 0 && (msg.image || msg.audioUrl) && (
+                            <span className="text-[9px] font-medium flex items-center gap-0.5 ml-1 text-green-300 bg-black/10 px-1 rounded">
+                              <CheckCheck className="w-2.5 h-2.5" /> Saved
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -627,6 +726,20 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
                   <Trash className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               </div>
+            ) : imagePreviewUrl ? (
+              <div className="w-full h-full flex items-center justify-between px-2 sm:px-4 bg-slate-100 dark:bg-slate-700/50">
+                <div className="flex-1 flex items-center py-1">
+                  <img src={imagePreviewUrl} alt="Preview" className="h-10 w-10 object-cover rounded-md shadow-sm border border-slate-300 dark:border-slate-600" />
+                  <span className="ml-3 text-sm font-medium text-slate-600 dark:text-slate-300">Image attached</span>
+                </div>
+                <button 
+                  onClick={cancelImage} 
+                  className="p-1.5 sm:p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-colors flex-shrink-0"
+                  title="Remove Image"
+                >
+                  <Trash className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
             ) : (
               <>
                 <input
@@ -635,8 +748,12 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   placeholder={replyTo ? "Type a reply..." : "Type a message..."}
-                  className="w-full h-full py-3.5 px-6 pr-14 bg-transparent text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 text-[15px] outline-none"
+                  className="w-full h-full py-3.5 px-6 pr-24 bg-transparent text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 text-[15px] outline-none"
                 />
+                <label title="Attach Image" className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer absolute right-12 z-10">
+                  <Paperclip className="w-5 h-5" />
+                  <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+                </label>
                 <motion.button
                   onClick={() => setShowEmojiPicker((prev) => !prev)}
                   whileHover={{ scale: 1.1 }}
@@ -649,7 +766,7 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
             )}
           </div>
 
-          {(!text.trim() && !isRecording && !audioBlob) ? (
+          {(!text.trim() && !isRecording && !audioBlob && !imageBase64) ? (
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -664,11 +781,11 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleSend}
-              disabled={(!text.trim() && !audioBlob) || sending || uploadingAudio}
+              disabled={(!text.trim() && !audioBlob && !imageBase64) || sending || uploadingAudio || uploadingImage}
               title="Send"
-              className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-all flex-shrink-0 shadow-lg ${uploadingAudio ? 'bg-primary-400 animate-pulse' : 'bg-primary-500 hover:bg-primary-600'} disabled:opacity-40 disabled:cursor-not-allowed shadow-primary-500/30`}
+              className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-all flex-shrink-0 shadow-lg ${uploadingAudio || uploadingImage ? 'bg-primary-400 animate-pulse' : 'bg-primary-500 hover:bg-primary-600'} disabled:opacity-40 disabled:cursor-not-allowed shadow-primary-500/30`}
             >
-              {uploadingAudio ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="w-5 h-5 translate-x-0.5" />}
+              {uploadingAudio || uploadingImage ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="w-5 h-5 translate-x-0.5" />}
             </motion.button>
           )}
         </div>

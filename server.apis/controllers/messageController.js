@@ -33,7 +33,7 @@ export const getMessages = async (req, res) => {
 // POST /api/v1/messages
 export const sendMessage = async (req, res) => {
   try {
-    const { conversationId, text, replyTo, audioUrl } = req.body; // ✅ replyTo & audioUrl added
+    const { conversationId, text, replyTo, audioUrl, image } = req.body; // ✅ replyTo, audioUrl, image added
     const senderId = req.user._id;
 
     const conversation = await Conversation.findById(conversationId);
@@ -48,6 +48,7 @@ export const sendMessage = async (req, res) => {
       status: "sent",
       replyTo: replyTo || null, // ✅ save reply reference
       audioUrl: audioUrl || "", // ✅ save audio reference
+      image: image || "", // ✅ save image reference
     });
 
     await newMessage.populate("sender", "_id full_name profilepicture");
@@ -419,24 +420,60 @@ export const sendPulse = async (req, res) => {
   }
 };
 
+// POST /api/v1/messages/upload-image
+export const uploadImage = async (req, res) => {
+  try {
+    const { image } = req.body;
+    if (!image) return res.status(400).json({ error: "No image provided" });
+
+    // Robustly separate the base64 data from the prefix
+    const parts = image.split("base64,");
+    if (parts.length !== 2) return res.status(400).json({ error: "Invalid image format" });
+
+    const base64Data = Buffer.from(parts[1], "base64");
+    
+    // figure out extension from mimetype
+    const meta = parts[0];
+    const typeMatch = meta.match(/^data:image\/([a-zA-Z0-9-]+)/);
+    const type = typeMatch ? typeMatch[1] : "jpeg";
+    
+    const params = {
+      Bucket: process.env.AWS_S3_BUCKET || "pulsechat-media",
+      Key: `images/${Date.now()}-${req.user._id}.${type}`,
+      Body: base64Data,
+      ContentType: `image/${type}`,
+      // ACL: "public-read",
+    };
+
+    const data = await AWSS3.upload(params).promise();
+    res.json({ Location: data.Location });
+  } catch (err) {
+    console.error("uploadImage error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // POST /api/v1/messages/upload-audio
 export const uploadAudio = async (req, res) => {
   try {
     const { audio } = req.body;
     if (!audio) return res.status(400).json({ error: "No audio provided" });
 
-    // audio is a base64 string, e.g. "data:audio/webm;base64,GkXfo59ChoEB..."
-    const base64Data = Buffer.from(audio.replace(/^data:audio\/\w+;base64,/, ""), "base64");
+    // Robustly separate the base64 data from the prefix
+    const parts = audio.split("base64,");
+    if (parts.length !== 2) return res.status(400).json({ error: "Invalid audio format" });
+
+    const base64Data = Buffer.from(parts[1], "base64");
     
     // figure out extension from mimetype
-    const typeMatch = audio.match(/^data:audio\/(\w+);base64,/);
+    const meta = parts[0];
+    const typeMatch = meta.match(/^data:audio\/([a-zA-Z0-9-]+)/);
     const type = typeMatch ? typeMatch[1] : "webm";
     
     const params = {
       Bucket: process.env.AWS_S3_BUCKET || "pulsechat-media",
       Key: `audio/${Date.now()}-${req.user._id}.${type}`,
       Body: base64Data,
-      ContentEncoding: "base64",
       ContentType: `audio/${type}`,
       // ACL: "public-read",
     };
@@ -445,6 +482,86 @@ export const uploadAudio = async (req, res) => {
     res.json({ Location: data.Location });
   } catch (err) {
     console.error("uploadAudio error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// GET /api/v1/messages/stream-audio?url=...
+export const streamAudio = async (req, res) => {
+  try {
+    const { url } = req.query;
+    if (!url) return res.status(400).json({ error: "No URL provided" });
+
+    // Parse the S3 key from the URL
+    const bucketName = process.env.AWS_S3_BUCKET || "pulsechat-media";
+    const urlObj = new URL(url);
+    let key = urlObj.pathname.substring(1);
+
+    if (key.startsWith(bucketName + '/')) {
+      key = key.replace(bucketName + '/', '');
+    }
+
+    const params = {
+      Bucket: bucketName,
+      Key: decodeURIComponent(key),
+    };
+
+    const request = AWSS3.getObject(params);
+    
+    request.on('httpHeaders', (statusCode, headers) => {
+      res.status(statusCode);
+      if (headers['content-type']) res.set('Content-Type', headers['content-type']);
+      if (headers['content-length']) res.set('Content-Length', headers['content-length']);
+      if (headers['accept-ranges']) res.set('Accept-Ranges', headers['accept-ranges']);
+      if (headers['content-range']) res.set('Content-Range', headers['content-range']);
+    });
+
+    const s3Stream = request.createReadStream();
+    
+    s3Stream.on('error', (err) => {
+      console.error("streamAudio S3 Error:", err);
+      if (!res.headersSent) {
+        res.status(404).send("Audio not found");
+      }
+    });
+
+    s3Stream.pipe(res);
+  } catch (err) {
+    console.error("streamAudio error:", err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+};
+
+// PUT /api/v1/messages/:messageId/downloaded
+export const markAsDownloaded = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user._id;
+
+    const message = await Message.findById(messageId);
+    if (!message) return res.status(404).json({ error: "Message not found" });
+
+    // Prevent duplicate entries
+    if (!message.downloadedBy.includes(userId)) {
+      message.downloadedBy.push(userId);
+      await message.save();
+
+      // Notify the sender that their media was downloaded
+      const senderSocketId = onlineUsers.get(message.sender.toString());
+      if (senderSocketId && message.sender.toString() !== userId.toString()) {
+        io.to(senderSocketId).emit("messageDownloaded", {
+          messageId: message._id,
+          downloadedBy: userId,
+          conversationId: message.conversationId,
+        });
+      }
+    }
+
+    res.json({ success: true, message });
+  } catch (err) {
+    console.error("markAsDownloaded error:", err);
     res.status(500).json({ error: err.message });
   }
 };

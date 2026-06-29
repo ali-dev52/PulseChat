@@ -125,11 +125,27 @@ export const useMessages = (conversationId) => {
       setTypingUsers(false);
     };
 
+    // ✅ message downloaded
+    const handleMessageDownloaded = ({ messageId, downloadedBy }) => {
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (String(m._id) === String(messageId)) {
+            const currentDownloadedBy = m.downloadedBy || [];
+            if (!currentDownloadedBy.includes(downloadedBy)) {
+              return { ...m, downloadedBy: [...currentDownloadedBy, downloadedBy] };
+            }
+          }
+          return m;
+        })
+      );
+    };
+
     socket.on("newMessage", handleNewMessage);
     socket.on("messageStatusUpdated", handleStatusUpdate);
     socket.on("messagesSeen", handleMessagesSeen);
     socket.on("messageDeleted", handleDeleteMessage);
     socket.on("messageEdited", handleEditMessage);
+    socket.on("messageDownloaded", handleMessageDownloaded);
     socket.on("typing", handleTyping);
     socket.on("stopTyping", handleStopTyping);
 
@@ -139,6 +155,7 @@ export const useMessages = (conversationId) => {
       socket.off("messagesSeen", handleMessagesSeen);
       socket.off("messageDeleted", handleDeleteMessage);
       socket.off("messageEdited", handleEditMessage);
+      socket.off("messageDownloaded", handleMessageDownloaded);
       socket.off("typing", handleTyping);
       socket.off("stopTyping", handleStopTyping);
     };
@@ -146,8 +163,8 @@ export const useMessages = (conversationId) => {
 
   // ── Send message ────────────────────────────────────────────────────────────
   const sendMessage = useCallback(
-    async (text, replyTo = null, audioUrl = null) => {
-      if ((!text.trim() && !audioUrl) || !conversationId || sending) return;
+    async (text, replyTo = null, audioUrl = null, imageUrl = null) => {
+      if ((!text.trim() && !audioUrl && !imageUrl) || !conversationId || sending) return;
       setSending(true);
 
       const optimisticId = `opt_${Date.now()}`;
@@ -158,6 +175,7 @@ export const useMessages = (conversationId) => {
         text,
         replyTo: replyTo || null,
         audioUrl: audioUrl || null,
+        image: imageUrl || null,
         createdAt: new Date().toISOString(),
         status: "sending",
       };
@@ -170,6 +188,7 @@ export const useMessages = (conversationId) => {
           text,
           replyTo: replyTo?._id || null,
           audioUrl: audioUrl || null,
+          image: imageUrl || null,
         });
 
         const saved = data.message || data;
@@ -278,6 +297,26 @@ export const useMessages = (conversationId) => {
     }
   }, [conversationId]);
 
+  // ── Mark as Downloaded ───────────────────────────────────────────────────────
+  const markAsDownloaded = useCallback(async (messageId) => {
+    try {
+      await api.put(`/messages/${messageId}/downloaded`);
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (String(m._id) === String(messageId)) {
+            const currentDownloadedBy = m.downloadedBy || [];
+            if (!currentDownloadedBy.includes(loggedInUserId)) {
+              return { ...m, downloadedBy: [...currentDownloadedBy, loggedInUserId] };
+            }
+          }
+          return m;
+        })
+      );
+    } catch (err) {
+      console.error("markAsDownloaded error:", err);
+    }
+  }, [loggedInUserId]);
+
   return {
     messages,
     loading,
@@ -290,5 +329,6 @@ export const useMessages = (conversationId) => {
     deleteMessage,
     editMessage,
     sendPulse,
+    markAsDownloaded,
   };
 };

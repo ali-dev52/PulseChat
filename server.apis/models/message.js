@@ -37,6 +37,7 @@ const messageSchema = new mongoose.Schema(
     },
     seenBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
     deliveredTo: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
+    downloadedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
     editedAt: {
       type: Date,
       default: null,

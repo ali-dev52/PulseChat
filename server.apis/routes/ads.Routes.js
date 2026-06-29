@@ -11,4 +11,7 @@ adsRoute.post("/upload-image", ads.uploadImage);
 // delete image
 adsRoute.post("/delete-image", ads.deleteImage);
 
+// upload audio
+adsRoute.post("/upload-audio", ads.uploadAudio);
+
 export default adsRoute

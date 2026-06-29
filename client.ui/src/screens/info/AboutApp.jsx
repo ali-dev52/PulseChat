@@ -13,7 +13,7 @@ const AboutApp = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 overflow-x-hidden selection:bg-primary-500/30">
       <nav className="fixed top-0 left-0 w-full p-4 z-50 backdrop-blur-md bg-white/70 dark:bg-slate-900/70 border-b border-slate-200 dark:border-slate-800">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <button 
+          <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
           >
@@ -30,8 +30,8 @@ const AboutApp = () => {
       </nav>
 
       <main className="pt-24 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        
-        <motion.section 
+
+        <motion.section
           initial="hidden" animate="visible" variants={fadeIn}
           className="text-center py-20 relative"
         >
@@ -45,14 +45,14 @@ const AboutApp = () => {
         </motion.section>
 
         {/* --- SYSTEM INTRO SECTION --- */}
-        <motion.section 
+        <motion.section
           initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn}
           className="my-16 relative p-8 md:p-12 rounded-[2.5rem] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white overflow-hidden shadow-2xl shadow-primary-500/20"
         >
           {/* Decorative background effects */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/30 blur-[80px] rounded-full pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/30 blur-[80px] rounded-full pointer-events-none" />
-          
+
           <div className="relative z-10 text-center mb-12">
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-primary-300 text-sm font-bold uppercase tracking-widest mb-6">
               <Rocket className="w-4 h-4" /> System Architecture
@@ -81,7 +81,7 @@ const AboutApp = () => {
           </div>
         </motion.section>
 
-        <motion.section 
+        <motion.section
           initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer}
           className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 my-20"
         >
@@ -100,7 +100,7 @@ const AboutApp = () => {
           ))}
         </motion.section>
 
-        <motion.section 
+        <motion.section
           initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeIn}
           className="my-32 max-w-4xl mx-auto"
         >
@@ -132,13 +132,13 @@ const AboutApp = () => {
           </div>
         </motion.section>
 
-        <motion.section 
+        <motion.section
           initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeIn}
           className="my-32 text-center"
         >
           <h2 className="text-4xl font-bold mb-4">Meet the Team</h2>
           <p className="text-lg text-slate-500 mb-12">The passionate engineers and designers behind PulseChat.</p>
-          
+
           <div className="flex flex-col items-center gap-8">
             <div className="p-8 rounded-3xl bg-gradient-to-b from-primary-50 to-white dark:from-slate-900 dark:to-slate-950 border border-primary-100 dark:border-slate-800 shadow-2xl max-w-sm w-full">
               <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-primary-500/40 mb-6">
@@ -148,12 +148,12 @@ const AboutApp = () => {
               <span className="inline-block px-3 py-1 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-xs uppercase font-bold tracking-wider mb-4">Creator & Lead</span>
               <p className="text-slate-600 dark:text-slate-400">Full Stack Engineering & Architecture</p>
             </div>
-            
-            
+
+
           </div>
         </motion.section>
 
-        <motion.section 
+        <motion.section
           initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer}
           className="my-32 max-w-5xl mx-auto"
         >
@@ -168,7 +168,7 @@ const AboutApp = () => {
               { icon: Phone, label: "Call Us", value: "+1 (555) 123-4567", color: "text-emerald-500" },
               { icon: MapPin, label: "Visit Us", value: "123 Innovation Drive", color: "text-purple-500" }
             ].map((contact, idx) => (
-              <motion.a 
+              <motion.a
                 key={idx} variants={fadeIn}
                 href={contact.href || "#"}
                 className="flex flex-col items-center p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all text-center group"
@@ -185,6 +185,68 @@ const AboutApp = () => {
         </motion.section>
 
       </main>
+
+      {/* Animated Footer */}
+      <footer className="w-full pt-16 pb-12 border-t border-slate-200/50 dark:border-slate-800/50 relative overflow-hidden flex flex-col items-center justify-center bg-white/10 dark:bg-slate-900/10 backdrop-blur-xl">
+        {/* Glow effects */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-32 bg-primary-500/20 dark:bg-primary-500/10 blur-[80px] rounded-full pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-32 bg-blue-500/20 dark:bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
+
+        {/* PulseChat Logo Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="flex flex-col items-center gap-1 mb-8 relative z-10"
+        >
+          <div className="flex items-center gap-3">
+             <motion.div
+               animate={{ scale: [1, 1.15, 1], rotate: [0, 5, -5, 0] }}
+               transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+               className="text-red-500 text-4xl drop-shadow-[0_0_12px_rgba(239,68,68,0.6)]"
+             >
+               🫀
+             </motion.div>
+             <span className="font-extrabold text-4xl tracking-tight drop-shadow-md">
+               <span className="text-red-500">Pulse</span>
+               <span className="text-blue-500">Chat</span>
+             </span>
+          </div>
+          <p className="text-xs font-bold text-slate-400 dark:text-slate-500 tracking-[0.3em] uppercase mt-2">Communication • Evolved</p>
+        </motion.div>
+
+        {/* Powered By Badge */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+          className="flex flex-col sm:flex-row items-center gap-4 relative z-10 bg-white/70 dark:bg-slate-800/70 px-8 py-4 rounded-full border border-white/50 dark:border-slate-700/50 shadow-2xl shadow-slate-200/50 dark:shadow-[0_0_40px_rgba(0,0,0,0.5)] backdrop-blur-md"
+        >
+          <span className="text-slate-500 font-bold tracking-widest uppercase text-xs opacity-80">Designed & Powered By</span>
+          <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 hidden sm:block" />
+          <motion.div
+            animate={{ 
+              backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"] 
+            }}
+            transition={{ 
+              duration: 4, 
+              ease: "linear", 
+              repeat: Infinity 
+            }}
+            className="text-xl sm:text-2xl font-black tracking-tighter bg-gradient-to-r from-primary-600 via-blue-500 to-purple-500 bg-[length:200%_auto] bg-clip-text text-transparent drop-shadow-sm flex items-center gap-3"
+          >
+            Ali Mehmood
+            <motion.div
+              animate={{ scale: [1, 1.4, 1] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
+            >
+              <Heart className="w-6 h-6 text-red-500 fill-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      </footer>
     </div>
   );
 };

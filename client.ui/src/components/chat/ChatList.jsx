@@ -22,7 +22,7 @@ const ChatList = ({
     <div className="flex-1 md:flex-none md:w-[340px] h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col z-10 transition-colors duration-500">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-6 h-20 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md">
+      <div className="flex items-center justify-between px-4 md:px-6 h-20 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md">
         <div className="flex items-center gap-2">
           <motion.div
             animate={{ scale: [1, 1.1, 1] }}
@@ -68,9 +68,9 @@ const ChatList = ({
       <div className="flex-1 overflow-y-auto custom-scrollbar">
         <AnimatePresence>
           {loading ? (
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="flex flex-col gap-0"
             >
@@ -88,7 +88,7 @@ const ChatList = ({
               ))}
             </motion.div>
           ) : filtered.length === 0 ? (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="flex flex-col items-center justify-center h-48 gap-3 text-slate-500 dark:text-slate-400"

@@ -146,8 +146,8 @@ export const useMessages = (conversationId) => {
 
   // ── Send message ────────────────────────────────────────────────────────────
   const sendMessage = useCallback(
-    async (text, replyTo = null) => {
-      if (!text.trim() || !conversationId || sending) return;
+    async (text, replyTo = null, audioUrl = null) => {
+      if ((!text.trim() && !audioUrl) || !conversationId || sending) return;
       setSending(true);
 
       const optimisticId = `opt_${Date.now()}`;
@@ -157,6 +157,7 @@ export const useMessages = (conversationId) => {
         sender: { _id: loggedInUserId },
         text,
         replyTo: replyTo || null,
+        audioUrl: audioUrl || null,
         createdAt: new Date().toISOString(),
         status: "sending",
       };
@@ -168,6 +169,7 @@ export const useMessages = (conversationId) => {
           conversationId,
           text,
           replyTo: replyTo?._id || null,
+          audioUrl: audioUrl || null,
         });
 
         const saved = data.message || data;

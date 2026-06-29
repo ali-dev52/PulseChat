@@ -10,9 +10,11 @@ import {
   groupMessagesByDate,
 } from "../../utils/chat";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Search, MoreVertical, Paperclip, Smile, Send, Edit2, Trash2, Reply, Check, CheckCheck, AlertCircle, CornerDownRight, X, Phone, Video } from "lucide-react";
+import { ArrowLeft, Search, MoreVertical, Paperclip, Smile, Send, Edit2, Trash2, Reply, Check, CheckCheck, AlertCircle, CornerDownRight, X, Phone, Video, Mic, Square, Trash } from "lucide-react";
 import ProfileModal from "../profile/ProfileModal";
 import AnimatedReveal from "../shared/AnimatedReveal";
+import VoicePlayer from "./VoicePlayer";
+import api from "../../services/api";
 
 const MessageStatus = ({ status }) => {
   if (status === "sending") return <Check className="w-3 h-3 text-slate-400 dark:text-slate-500" />;
@@ -59,9 +61,17 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [pulseActive, setPulseActive] = useState(false);
   const [pulseMessage, setPulseMessage] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState(null);
+  const [uploadingAudio, setUploadingAudio] = useState(false);
+
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const typingTimerRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioTimerRef = useRef(null);
   const loggedInUserId = Auth?.User?._id;
   const socket = useSocket();
 
@@ -169,14 +179,106 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
     }, 1500);
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      const audioChunks = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+        setAudioBlob(blob);
+        const url = URL.createObjectURL(blob);
+        setAudioPreviewUrl(url);
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      audioTimerRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
+      alert("Microphone access is required to send voice notes.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      clearInterval(audioTimerRef.current);
+    }
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+    }
+    setIsRecording(false);
+    clearInterval(audioTimerRef.current);
+    setAudioBlob(null);
+    if (audioPreviewUrl) URL.revokeObjectURL(audioPreviewUrl);
+    setAudioPreviewUrl(null);
+    setRecordingTime(0);
+  };
+
+  const uploadAudioBlob = async (blob) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = async () => {
+        const base64Audio = reader.result;
+        try {
+          const { data } = await api.post("/messages/upload-audio", { audio: base64Audio });
+          resolve(data.Location);
+        } catch (error) {
+          reject(error);
+        }
+      };
+    });
+  };
+
+  const formatRecordingTime = (seconds) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
   const handleSend = async () => {
-    if (!text.trim() || sending) return;
+    if ((!text.trim() && !audioBlob) || sending || uploadingAudio) return;
+    
+    let audioUrl = null;
+    if (audioBlob) {
+      setUploadingAudio(true);
+      try {
+        audioUrl = await uploadAudioBlob(audioBlob);
+      } catch (err) {
+        console.error("Audio upload failed", err);
+        setUploadingAudio(false);
+        return;
+      }
+      setUploadingAudio(false);
+    }
+
     const msg = text.trim();
     const reply = replyTo;
     setText("");
     setReplyTo(null);
+    setAudioBlob(null);
+    if (audioPreviewUrl) URL.revokeObjectURL(audioPreviewUrl);
+    setAudioPreviewUrl(null);
     emitStopTyping(otherUser?._id);
-    await sendMessage(msg, reply);
+    await sendMessage(msg, reply, audioUrl);
   };
 
   const handleKeyDown = (e) => {
@@ -380,7 +482,14 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
                             <AlertCircle className="w-4 h-4" /> This message was deleted
                           </p>
                         ) : (
-                          <p className="break-words">{msg.text}</p>
+                          <>
+                            {msg.audioUrl && (
+                               <div className={`${msg.text ? 'mb-2' : 'mb-0'} min-w-[200px] sm:min-w-[250px]`}>
+                                 <VoicePlayer src={msg.audioUrl} isMe={isMe} />
+                               </div>
+                            )}
+                            {msg.text && <p className="break-words">{msg.text}</p>}
+                          </>
                         )}
 
                         <div className={`flex items-center justify-end gap-1.5 mt-1.5 ${
@@ -480,35 +589,88 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
             )}
           </AnimatePresence>
 
-          <div className="flex-1 min-w-0 border border-slate-200 dark:border-slate-700 rounded-3xl relative flex items-center overflow-hidden transition-all focus-within:border-primary-500/50 bg-slate-50 dark:bg-slate-800 focus-within:bg-white dark:focus-within:bg-slate-900 shadow-sm focus-within:shadow-md">
-            <input
-              ref={inputRef}
-              value={text}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder={replyTo ? "Type a reply..." : "Type a message..."}
-              className="w-full py-3.5 px-6 pr-14 bg-transparent text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 text-[15px] outline-none"
-            />
-            <motion.button
-              onClick={() => setShowEmojiPicker((prev) => !prev)}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors absolute right-2 ${showEmojiPicker ? "text-primary-500 bg-primary-50 dark:bg-primary-500/10" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"}`}
-            >
-              <Smile className="w-5 h-5" />
-            </motion.button>
+          <div className="flex-1 min-w-0 border border-slate-200 dark:border-slate-700 rounded-3xl relative flex items-center overflow-hidden transition-all focus-within:border-primary-500/50 bg-slate-50 dark:bg-slate-800 focus-within:bg-white dark:focus-within:bg-slate-900 shadow-sm focus-within:shadow-md h-[52px]">
+            {isRecording ? (
+              <div className="w-full h-full flex items-center justify-between px-3 sm:px-5 bg-red-50 dark:bg-red-500/10">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="relative flex items-center justify-center">
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500 z-10" />
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500 absolute animate-ping opacity-75" />
+                  </div>
+                  <span className="text-red-500 font-medium tracking-wider text-xs sm:text-base w-10 sm:w-12">{formatRecordingTime(recordingTime)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={cancelRecording} 
+                    className="flex items-center px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-slate-500 hover:text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 rounded-full transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={stopRecording} 
+                    className="flex items-center px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:hover:bg-primary-500/20 rounded-full transition-colors sm:ml-2"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : audioPreviewUrl ? (
+              <div className="w-full h-full flex items-center justify-between px-2 sm:px-4 bg-slate-100 dark:bg-slate-700/50">
+                <div className="flex-1 flex items-center">
+                  <VoicePlayer src={audioPreviewUrl} isMe={false} />
+                </div>
+                <button 
+                  onClick={cancelRecording} 
+                  className="p-1.5 sm:p-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-colors flex-shrink-0"
+                  title="Delete Recording"
+                >
+                  <Trash className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  ref={inputRef}
+                  value={text}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder={replyTo ? "Type a reply..." : "Type a message..."}
+                  className="w-full h-full py-3.5 px-6 pr-14 bg-transparent text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 text-[15px] outline-none"
+                />
+                <motion.button
+                  onClick={() => setShowEmojiPicker((prev) => !prev)}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors absolute right-2 ${showEmojiPicker ? "text-primary-500 bg-primary-50 dark:bg-primary-500/10" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"}`}
+                >
+                  <Smile className="w-5 h-5" />
+                </motion.button>
+              </>
+            )}
           </div>
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleSend}
-            disabled={!text.trim() || sending}
-            title="Send"
-            className="w-12 h-12 rounded-full flex items-center justify-center bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0 shadow-lg shadow-primary-500/30"
-          >
-            <Send className="w-5 h-5 translate-x-0.5" />
-          </motion.button>
+          {(!text.trim() && !isRecording && !audioBlob) ? (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={startRecording}
+              title="Record Voice Note"
+              className="w-12 h-12 rounded-full flex items-center justify-center bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex-shrink-0 shadow-sm"
+            >
+              <Mic className="w-5 h-5" />
+            </motion.button>
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleSend}
+              disabled={(!text.trim() && !audioBlob) || sending || uploadingAudio}
+              title="Send"
+              className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-all flex-shrink-0 shadow-lg ${uploadingAudio ? 'bg-primary-400 animate-pulse' : 'bg-primary-500 hover:bg-primary-600'} disabled:opacity-40 disabled:cursor-not-allowed shadow-primary-500/30`}
+            >
+              {uploadingAudio ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="w-5 h-5 translate-x-0.5" />}
+            </motion.button>
+          )}
         </div>
       </div>
 

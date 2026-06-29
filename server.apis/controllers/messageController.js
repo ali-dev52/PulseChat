@@ -3,6 +3,7 @@ import Conversation from "../models/conversation.js";
 import User from "../models/user.models.js";
 import webpush from "../config/webpush.js";
 import { io, onlineUsers } from "../server.js";
+import { AWSS3 } from "../config/aws.js";
 
 // GET /api/v1/messages/:conversationId
 export const getMessages = async (req, res) => {
@@ -32,7 +33,7 @@ export const getMessages = async (req, res) => {
 // POST /api/v1/messages
 export const sendMessage = async (req, res) => {
   try {
-    const { conversationId, text, replyTo } = req.body; // ✅ replyTo added
+    const { conversationId, text, replyTo, audioUrl } = req.body; // ✅ replyTo & audioUrl added
     const senderId = req.user._id;
 
     const conversation = await Conversation.findById(conversationId);
@@ -46,6 +47,7 @@ export const sendMessage = async (req, res) => {
       text,
       status: "sent",
       replyTo: replyTo || null, // ✅ save reply reference
+      audioUrl: audioUrl || "", // ✅ save audio reference
     });
 
     await newMessage.populate("sender", "_id full_name profilepicture");
@@ -96,7 +98,7 @@ export const sendMessage = async (req, res) => {
           });
         }
       }
-      
+
       // ✅ Web Push Notification
       try {
         const receiverUser = await User.findById(receiverId);
@@ -414,5 +416,35 @@ export const sendPulse = async (req, res) => {
   } catch (error) {
     console.error("sendPulse error:", error);
     res.status(500).json({ error: error.message });
+  }
+};
+
+// POST /api/v1/messages/upload-audio
+export const uploadAudio = async (req, res) => {
+  try {
+    const { audio } = req.body;
+    if (!audio) return res.status(400).json({ error: "No audio provided" });
+
+    // audio is a base64 string, e.g. "data:audio/webm;base64,GkXfo59ChoEB..."
+    const base64Data = Buffer.from(audio.replace(/^data:audio\/\w+;base64,/, ""), "base64");
+    
+    // figure out extension from mimetype
+    const typeMatch = audio.match(/^data:audio\/(\w+);base64,/);
+    const type = typeMatch ? typeMatch[1] : "webm";
+    
+    const params = {
+      Bucket: process.env.AWS_S3_BUCKET || "pulsechat-media",
+      Key: `audio/${Date.now()}-${req.user._id}.${type}`,
+      Body: base64Data,
+      ContentEncoding: "base64",
+      ContentType: `audio/${type}`,
+      // ACL: "public-read",
+    };
+
+    const data = await AWSS3.upload(params).promise();
+    res.json({ Location: data.Location });
+  } catch (err) {
+    console.error("uploadAudio error:", err);
+    res.status(500).json({ error: err.message });
   }
 };

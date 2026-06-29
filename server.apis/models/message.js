@@ -20,6 +20,10 @@ const messageSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    audioUrl: {
+      type: String,
+      default: "",
+    },
     // ✅ reply to specific message
     replyTo: {
       type: mongoose.Schema.Types.ObjectId,

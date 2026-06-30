@@ -109,39 +109,50 @@ export const sendMessage = async (req, res) => {
           const senderName = senderUser?.full_name || "Someone";
           const senderAvatar = senderUser?.profilepicture || "/favicon.png";
 
+          let pushBody = text;
+          if (!pushBody) {
+             if (image) pushBody = "📷 Photo";
+             else if (audioUrl) pushBody = "🎤 Voice Note";
+             else pushBody = "New message";
+          }
+
           const payload = JSON.stringify({
             title: `${senderName}`,
-            body: text,
+            body: pushBody,
             icon: senderAvatar,
             url: `/?chat=${conversationId}`,
             conversationId: conversationId.toString()
           });
 
-          // Send to all registered devices
-          const validSubscriptions = [];
-          for (const sub of receiverUser.pushSubscriptions) {
-            try {
-              await webpush.sendNotification(sub, payload);
-              validSubscriptions.push(sub);
-            } catch (err) {
-              // 410 means subscription is no longer valid (e.g., user revoked permission)
-              if (err.statusCode === 410 || err.statusCode === 404) {
-                console.log("Removing expired push subscription");
-              } else {
-                console.error("Web push error:", err);
-                validSubscriptions.push(sub); // keep if it's a temp error
-              }
-            }
-          }
+          // Run push notifications asynchronously to prevent blocking the API response
+          (async () => {
+            const validSubscriptions = [];
+            let subscriptionsChanged = false;
 
-          // update db if any subscriptions were removed
-          if (validSubscriptions.length !== receiverUser.pushSubscriptions.length) {
-            receiverUser.pushSubscriptions = validSubscriptions;
-            await receiverUser.save();
-          }
+            await Promise.all(receiverUser.pushSubscriptions.map(async (sub) => {
+              try {
+                await webpush.sendNotification(sub, payload, { urgency: 'high' });
+                validSubscriptions.push(sub);
+              } catch (err) {
+                // 410 means subscription is no longer valid (e.g., user revoked permission)
+                if (err.statusCode === 410 || err.statusCode === 404) {
+                  console.log("Removing expired push subscription");
+                  subscriptionsChanged = true;
+                } else {
+                  console.error("Web push error:", err);
+                  validSubscriptions.push(sub); // keep if it's a temp error
+                }
+              }
+            }));
+
+            // update db if any subscriptions were removed
+            if (subscriptionsChanged) {
+              await User.findByIdAndUpdate(receiverId, { pushSubscriptions: validSubscriptions });
+            }
+          })();
         }
       } catch (err) {
-        console.error("Failed to send push notification:", err);
+        console.error("Failed to setup push notification:", err);
       }
     }
 
@@ -548,20 +559,291 @@ export const markAsDownloaded = async (req, res) => {
       message.downloadedBy.push(userId);
       await message.save();
 
+      const downloader = await User.findById(userId);
+      
+      const systemMsgText = `${downloader?.full_name || downloader?.name || "User"} saved your ${message.image ? 'photo' : 'voice note'}`;
+
+      const sysMessage = await Message.create({
+        conversationId: message.conversationId,
+        sender: userId,
+        text: systemMsgText,
+        status: "sent",
+        isSystem: true
+      });
+
+      await sysMessage.populate("sender", "_id full_name profilepicture");
+
+      // Update conversation with last message
+      const conversation = await Conversation.findById(message.conversationId);
+      if (conversation) {
+        conversation.lastMessage = sysMessage._id;
+        await conversation.save();
+      }
+
+      const socketPayload = {
+        ...sysMessage.toObject(),
+        conversationId: message.conversationId.toString(),
+      };
+
       // Notify the sender that their media was downloaded
       const senderSocketId = onlineUsers.get(message.sender.toString());
       if (senderSocketId && message.sender.toString() !== userId.toString()) {
+        // Emit the system message to the sender
+        io.to(senderSocketId).emit("newMessage", socketPayload);
+        
         io.to(senderSocketId).emit("messageDownloaded", {
           messageId: message._id,
           downloadedBy: userId,
           conversationId: message.conversationId,
         });
+
+        // Update sender's sidebar
+        io.to(senderSocketId).emit("conversationUpdated", socketPayload);
       }
+      
+      // Also emit the system message to the downloader so they see it too
+      const downloaderSocketId = onlineUsers.get(userId.toString());
+      if (downloaderSocketId) {
+        io.to(downloaderSocketId).emit("newMessage", socketPayload);
+        
+        // Update downloader's sidebar
+        io.to(downloaderSocketId).emit("conversationUpdated", socketPayload);
+      }
+      
+      return res.json({ success: true, message, sysMessage });
     }
 
     res.json({ success: true, message });
   } catch (err) {
     console.error("markAsDownloaded error:", err);
     res.status(500).json({ error: err.message });
+  }
+};
+
+// POST /api/v1/messages/screenshot
+export const reportScreenshot = async (req, res) => {
+  try {
+    const { conversationId } = req.body;
+    const userId = req.user._id;
+
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ error: "Conversation not found" });
+    }
+
+    const user = await User.findById(userId);
+    const systemMsgText = `${user?.full_name || user?.name || "User"} captured a screenshot`;
+
+    const sysMessage = await Message.create({
+      conversationId: conversation._id,
+      sender: userId,
+      text: systemMsgText,
+      status: "sent",
+      isSystem: true
+    });
+
+    await sysMessage.populate("sender", "_id full_name profilepicture");
+
+    conversation.lastMessage = sysMessage._id;
+    await conversation.save();
+
+    const socketPayload = {
+      ...sysMessage.toObject(),
+      conversationId: conversation._id.toString(),
+    };
+
+    const receiverId = conversation.participants.find(
+      (p) => p.toString() !== userId.toString()
+    );
+
+    if (receiverId) {
+      const receiverSocketId = onlineUsers.get(receiverId.toString());
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("newMessage", socketPayload);
+        io.to(receiverSocketId).emit("conversationUpdated", socketPayload);
+      }
+    }
+
+    const senderSocketId = onlineUsers.get(userId.toString());
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("newMessage", socketPayload);
+      io.to(senderSocketId).emit("conversationUpdated", socketPayload);
+    }
+
+    res.status(201).json({ success: true, sysMessage });
+  } catch (error) {
+    console.error("reportScreenshot error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// POST /api/v1/messages/forward
+export const forwardMessage = async (req, res) => {
+  try {
+    const { messageId, targetConversationId } = req.body;
+    const userId = req.user._id;
+
+    const originalMsg = await Message.findById(messageId);
+    if (!originalMsg) return res.status(404).json({ error: "Message not found" });
+
+    const rootMessageId = originalMsg.originalMessageId || originalMsg._id;
+    const rootMessage = await Message.findById(rootMessageId);
+    
+    const originalSenderId = rootMessage ? rootMessage.sender.toString() : originalMsg.sender.toString();
+    const isOriginalSender = originalSenderId === userId.toString();
+
+    let currentForwardCount = 1;
+    if (rootMessage && !isOriginalSender) {
+      rootMessage.forwardCount = (rootMessage.forwardCount || 0) + 1;
+      currentForwardCount = rootMessage.forwardCount;
+      await rootMessage.save();
+    }
+
+    const targetConversation = await Conversation.findById(targetConversationId);
+    if (!targetConversation) return res.status(404).json({ error: "Target conversation not found" });
+
+    // Create the forwarded message
+    const newMsg = await Message.create({
+      conversationId: targetConversationId,
+      sender: userId,
+      text: originalMsg.text,
+      image: originalMsg.image,
+      audioUrl: originalMsg.audioUrl,
+      isForwarded: !isOriginalSender,
+      originalMessageId: isOriginalSender ? null : rootMessageId,
+      status: "sent"
+    });
+
+    await newMsg.populate("sender", "_id full_name profilepicture");
+
+    targetConversation.lastMessage = newMsg._id;
+    await targetConversation.save();
+
+    // Emit the forwarded message to the target conversation participants
+    const targetPayload = {
+      ...newMsg.toObject(),
+      conversationId: targetConversationId.toString()
+    };
+
+    targetConversation.participants.forEach(p => {
+      const socketId = onlineUsers.get(p.toString());
+      if (socketId) {
+        io.to(socketId).emit("newMessage", targetPayload);
+        io.to(socketId).emit("conversationUpdated", targetPayload);
+      }
+    });
+
+    // If it's not the original sender forwarding it, run all the notification and update logic
+    if (!isOriginalSender) {
+      // Only send the system notification to the root message's conversation
+      const rootConvId = rootMessage ? rootMessage.conversationId.toString() : originalMsg.conversationId.toString();
+      
+      let mediaType = "message";
+      if (originalMsg.image) mediaType = "photo";
+      else if (originalMsg.audioUrl) mediaType = "voice note";
+      else if (originalMsg.text) mediaType = `message "${originalMsg.text.substring(0, 20)}${originalMsg.text.length > 20 ? '...' : ''}"`;
+
+      const forwardingUser = await User.findById(userId);
+      const userName = forwardingUser?.full_name || forwardingUser?.name || "User";
+      const notifyText = `${userName} forwarded this ${mediaType}. Total forwards: ${currentForwardCount}`;
+
+      const rootConv = await Conversation.findById(rootConvId);
+      if (rootConv) {
+        let notifyMsg = await Message.findOne({
+          conversationId: rootConvId,
+          isSystem: true,
+          originalMessageId: rootMessageId
+        });
+
+        if (notifyMsg) {
+          notifyMsg.text = notifyText;
+          await notifyMsg.save();
+          await notifyMsg.populate("sender", "_id full_name profilepicture");
+
+          rootConv.lastMessage = notifyMsg._id;
+          await rootConv.save();
+
+          const notifyPayload = {
+            ...notifyMsg.toObject(),
+            conversationId: rootConvId
+          };
+
+          rootConv.participants.forEach(p => {
+            const socketId = onlineUsers.get(p.toString());
+            if (socketId) {
+              io.to(socketId).emit("messageEdited", notifyPayload);
+              io.to(socketId).emit("conversationUpdated", notifyPayload);
+            }
+          });
+        } else {
+          notifyMsg = await Message.create({
+            conversationId: rootConvId,
+            sender: userId,
+            text: notifyText,
+            isSystem: true,
+            originalMessageId: rootMessageId,
+            status: "sent"
+          });
+          await notifyMsg.populate("sender", "_id full_name profilepicture");
+          rootConv.lastMessage = notifyMsg._id;
+          await rootConv.save();
+
+          const notifyPayload = {
+            ...notifyMsg.toObject(),
+            conversationId: rootConvId
+          };
+
+          rootConv.participants.forEach(p => {
+            const socketId = onlineUsers.get(p.toString());
+            if (socketId) {
+              io.to(socketId).emit("newMessage", notifyPayload);
+              io.to(socketId).emit("conversationUpdated", notifyPayload);
+            }
+          });
+        }
+      }
+
+      // Update forwardCount on ALL copies of this message and emit messageEdited
+      await Message.updateMany(
+        { $or: [{ _id: rootMessageId }, { originalMessageId: rootMessageId }] },
+        { $set: { forwardCount: currentForwardCount } }
+      );
+
+      const allForwardsAfterUpdate = await Message.find({
+        $or: [{ _id: rootMessageId }, { originalMessageId: rootMessageId }]
+      });
+
+      for (const msg of allForwardsAfterUpdate) {
+        const convId = msg.conversationId.toString();
+        if (convId === targetConversationId.toString() && msg._id.toString() === newMsg._id.toString()) continue;
+
+        const c = await Conversation.findById(convId);
+        if (!c) continue;
+
+        // Ensure we populate sender before emitting messageEdited
+        await msg.populate("sender", "_id full_name profilepicture");
+
+        const payload = {
+          ...msg.toObject(),
+          conversationId: convId
+        };
+
+        c.participants.forEach(p => {
+          const socketId = onlineUsers.get(p.toString());
+          if (socketId) {
+            io.to(socketId).emit("messageEdited", payload);
+          }
+        });
+      }
+    }
+
+    // Make sure newMsg returns with the updated count if it was updated above
+    const updatedNewMsg = await Message.findById(newMsg._id).populate("sender", "_id full_name profilepicture");
+
+    res.status(201).json({ success: true, message: updatedNewMsg });
+
+  } catch (error) {
+    console.error("forwardMessage error:", error);
+    res.status(500).json({ error: error.message });
   }
 };

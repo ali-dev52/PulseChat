@@ -10,8 +10,9 @@ import {
   groupMessagesByDate,
 } from "../../utils/chat";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Search, MoreVertical, Paperclip, Smile, Send, Edit2, Trash2, Reply, Check, CheckCheck, AlertCircle, CornerDownRight, X, Phone, Video, Mic, Square, Trash, Image, Download } from "lucide-react";
+import { ArrowLeft, Search, MoreVertical, Paperclip, Smile, Send, Edit2, Trash2, Reply, Check, CheckCheck, AlertCircle, CornerDownRight, X, Phone, Video, Mic, Square, Trash, Image, Download, CornerUpRight } from "lucide-react";
 import ProfileModal from "../profile/ProfileModal";
+import ForwardModal from "./ForwardModal";
 import AnimatedReveal from "../shared/AnimatedReveal";
 import VoicePlayer from "./VoicePlayer";
 import api from "../../services/api";
@@ -61,6 +62,7 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [pulseActive, setPulseActive] = useState(false);
   const [pulseMessage, setPulseMessage] = useState("");
+  const [forwardMessageId, setForwardMessageId] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState(null);
@@ -91,7 +93,41 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
     editMessage,
     sendPulse,
     markAsDownloaded,
+    reportScreenshotAttempt,
+    forwardMessage,
   } = useMessages(conversation?._id);
+
+  // Anti-Screenshot and Blur Logic
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // PrintScreen, Cmd+Shift+S, Cmd+Shift+4, Ctrl+P, Cmd+P
+      if (
+        e.key === "PrintScreen" ||
+        (e.metaKey && e.shiftKey && (e.key === "s" || e.key === "S" || e.key === "4")) ||
+        (e.ctrlKey && (e.key === "p" || e.key === "P")) ||
+        (e.metaKey && (e.key === "p" || e.key === "P"))
+      ) {
+        // Attempt to block and clear clipboard
+        navigator.clipboard.writeText("");
+        reportScreenshotAttempt();
+      }
+    };
+
+    const handleKeyUp = (e) => {
+      if (e.key === "PrintScreen") {
+        navigator.clipboard.writeText("");
+        reportScreenshotAttempt();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [reportScreenshotAttempt]);
 
   // auto scroll
   useEffect(() => {
@@ -364,7 +400,8 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
           ]
         } : {}}
         transition={{ duration: 0.8, ease: "easeInOut" }}
-        className={`flex-1 h-full flex flex-col min-h-0 min-w-0 relative bg-white dark:bg-slate-950 transition-colors duration-500 ${pulseActive ? "ring-4 ring-red-500/50" : ""}`}
+        className={`flex-1 h-full flex flex-col min-h-0 min-w-0 relative bg-white dark:bg-slate-950 transition-colors duration-500 select-none ${pulseActive ? "ring-4 ring-red-500/50" : ""}`}
+        onContextMenu={(e) => e.preventDefault()}
       >
 
         <AnimatePresence>
@@ -472,8 +509,26 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
               </div>
 
               {group.map((msg) => {
+                if (msg.isSystem) {
+                  return (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      key={msg._id}
+                      className="flex justify-center my-2"
+                    >
+                      <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-white/5 px-4 py-1.5 rounded-full shadow-sm">
+                        {msg.text}
+                      </span>
+                    </motion.div>
+                  );
+                }
+
                 const isMe =
                   String(msg.sender?._id || msg.sender) === String(loggedInUserId);
+                
+                const isOnlyImage = msg.image && !msg.text && !msg.audioUrl;
+
                 return (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -510,10 +565,10 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
                         </div>
                       )}
 
-                      <div className={`relative px-4 py-2.5 rounded-2xl text-[15px] leading-relaxed shadow-sm ${
+                      <div className={`relative ${isOnlyImage ? 'p-1 rounded-2xl bg-transparent' : 'px-4 py-2.5 rounded-2xl shadow-sm'} text-[15px] leading-relaxed ${
                         isMe
-                          ? "bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-tr-sm"
-                          : "bg-surface border border-white/5 text-gray-100 rounded-tl-sm"
+                          ? (isOnlyImage ? "" : "bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-tr-sm")
+                          : (isOnlyImage ? "" : "bg-surface border border-white/5 text-gray-100 rounded-tl-sm")
                       } ${msg.status === "sending" ? "opacity-70" : "opacity-100"}`}>
 
                         {/* Action Bar on hover */}
@@ -546,6 +601,13 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
                               title="Reply"
                             >
                               <Reply className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setForwardMessageId(msg._id)}
+                              className="p-1.5 text-slate-500 hover:text-purple-500 dark:text-slate-400 dark:hover:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors"
+                              title="Forward"
+                            >
+                              <CornerUpRight className="w-4 h-4" />
                             </button>
                           </div>
                         )}
@@ -601,6 +663,21 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
                           )}
                         </div>
                       </div>
+
+                      {/* Forwarded Indicators below message */}
+                      {msg.isForwarded ? (
+                        <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 italic ml-1">
+                          <CornerUpRight className="w-3 h-3" />
+                          <span>Forwarded</span>
+                        </div>
+                      ) : (
+                        msg.forwardCount > 0 && (
+                          <div className="flex items-center gap-1 text-[11px] font-medium text-purple-500 dark:text-purple-400 mt-0.5 italic ml-1">
+                            <CornerUpRight className="w-3 h-3" />
+                            <span>Forwarded {msg.forwardCount} time{msg.forwardCount > 1 ? 's' : ''}</span>
+                          </div>
+                        )
+                      )}
 
                       {/* failed message retry */}
                       {msg.status === "failed" && (
@@ -885,6 +962,14 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
           onClose={() => setShowProfile(false)} 
         />
         )}
+
+      <ForwardModal 
+        isOpen={!!forwardMessageId}
+        onClose={() => setForwardMessageId(null)}
+        onForward={(targetConversationId) => {
+          forwardMessage(forwardMessageId, targetConversationId);
+        }}
+      />
       </motion.div>
   );
 };

@@ -46,6 +46,23 @@ const messageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isSystem: {
+      type: Boolean,
+      default: false,
+    },
+    isForwarded: {
+      type: Boolean,
+      default: false,
+    },
+    originalMessageId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+      default: null,
+    },
+    forwardCount: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

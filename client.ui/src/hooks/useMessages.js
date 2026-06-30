@@ -300,9 +300,9 @@ export const useMessages = (conversationId) => {
   // ── Mark as Downloaded ───────────────────────────────────────────────────────
   const markAsDownloaded = useCallback(async (messageId) => {
     try {
-      await api.put(`/messages/${messageId}/downloaded`);
-      setMessages((prev) =>
-        prev.map((m) => {
+      const { data } = await api.put(`/messages/${messageId}/downloaded`);
+      setMessages((prev) => {
+        const next = prev.map((m) => {
           if (String(m._id) === String(messageId)) {
             const currentDownloadedBy = m.downloadedBy || [];
             if (!currentDownloadedBy.includes(loggedInUserId)) {
@@ -310,12 +310,49 @@ export const useMessages = (conversationId) => {
             }
           }
           return m;
-        })
-      );
+        });
+        
+        // If the backend returns a new system message, append it immediately
+        if (data && data.sysMessage) {
+          const exists = next.some((m) => String(m._id) === String(data.sysMessage._id));
+          if (!exists) {
+            next.push(data.sysMessage);
+          }
+        }
+        return next;
+      });
     } catch (err) {
       console.error("markAsDownloaded error:", err);
     }
   }, [loggedInUserId]);
+
+  const reportScreenshotAttempt = useCallback(async () => {
+    if (!conversationId) return;
+    try {
+      const { data } = await api.post("/messages/screenshot", { conversationId });
+      if (data && data.sysMessage) {
+        setMessages((prev) => {
+          const exists = prev.some((m) => String(m._id) === String(data.sysMessage._id));
+          if (!exists) {
+            return [...prev, data.sysMessage];
+          }
+          return prev;
+        });
+      }
+    } catch (err) {
+      console.error("reportScreenshot error:", err);
+    }
+  }, [conversationId]);
+
+  const forwardMessage = useCallback(async (messageId, targetConversationId) => {
+    try {
+      await api.post("/messages/forward", { messageId, targetConversationId });
+      toast.success("Message forwarded!");
+    } catch (err) {
+      console.error("forwardMessage error:", err);
+      toast.error("Failed to forward message");
+    }
+  }, []);
 
   return {
     messages,
@@ -330,5 +367,7 @@ export const useMessages = (conversationId) => {
     editMessage,
     sendPulse,
     markAsDownloaded,
+    reportScreenshotAttempt,
+    forwardMessage,
   };
 };

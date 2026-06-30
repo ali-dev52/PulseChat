@@ -10,6 +10,8 @@ import {
   uploadImage,
   streamAudio,
   markAsDownloaded,
+  reportScreenshot,
+  forwardMessage,
 } from "../controllers/messageController.js";
 import protectRoute from "../middlewares/authMiddleware.js";
 
@@ -21,6 +23,8 @@ router.post("/upload-audio", protectRoute, uploadAudio);
 router.post("/upload-image", protectRoute, uploadImage);
 router.post("/", protectRoute, sendMessage);
 router.post("/pulse", protectRoute, sendPulse);
+router.post("/forward", protectRoute, forwardMessage);
+router.post("/screenshot", protectRoute, reportScreenshot);
 router.put("/seen/:conversationId", protectRoute, markAsSeen);
 router.put("/:messageId/downloaded", protectRoute, markAsDownloaded);
 router.put("/:messageId/edit", protectRoute, editMessage);

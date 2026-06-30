@@ -143,10 +143,13 @@ export const useChat = (selectedChatId = null) => { // ✅ accepts selectedChatI
               lastMessage: {
                 _id: msg._id,
                 text: msg.text,
+                image: msg.image,
+                audioUrl: msg.audioUrl,
                 sender: msg.sender,
                 status: msg.status,
                 createdAt: msg.createdAt,
                 isDeleted: msg.isDeleted,
+                isSystem: msg.isSystem,
               },
               unread: isFromOther && !isCurrentlyOpen
                 ? (conv.unread || 0) + 1
@@ -165,10 +168,13 @@ export const useChat = (selectedChatId = null) => { // ✅ accepts selectedChatI
       const lastMessage = msg.lastMessage || {
         _id: msg._id,
         text: msg.text,
+        image: msg.image,
+        audioUrl: msg.audioUrl,
         sender: msg.sender,
         status: msg.status,
         createdAt: msg.createdAt,
         isDeleted: msg.isDeleted,
+        isSystem: msg.isSystem,
       };
 
       setConversations((prev) =>

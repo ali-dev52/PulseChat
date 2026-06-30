@@ -101,7 +101,7 @@ const VoicePlayer = ({ src, isMe }) => {
         )}
       </button>
 
-      <div className="flex flex-col min-w-[120px] sm:min-w-[180px] max-w-[250px] flex-1">
+      <div className="flex flex-col flex-1 min-w-[120px] sm:min-w-[180px] w-full">
         <div ref={waveformRef} className="w-full h-[30px] cursor-pointer" />
         <div className={`flex justify-between mt-1 text-[11px] font-medium tracking-wide ${isMe ? 'text-white/80' : 'text-slate-500 dark:text-slate-400'}`}>
           <span>{formatTime(currentTime)}</span>

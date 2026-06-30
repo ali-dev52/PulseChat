@@ -50,10 +50,13 @@ export const getConversations = async (req, res) => {
           ? {
               _id: conv.lastMessage._id,
               text: conv.lastMessage.text,
+              image: conv.lastMessage.image,
+              audioUrl: conv.lastMessage.audioUrl,
               sender: conv.lastMessage.sender,
               status: conv.lastMessage.status,
               createdAt: conv.lastMessage.createdAt,
               isDeleted: conv.lastMessage.isDeleted,
+              isSystem: conv.lastMessage.isSystem,
             }
           : null,
         unreadCount,

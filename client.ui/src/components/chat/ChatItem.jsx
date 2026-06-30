@@ -25,6 +25,10 @@ const ChatItem = ({ conv, isActive, onClick }) => {
     ? "This message was deleted"
     : lastMessage?.text
     ? `${isMyMessage ? "You: " : ""}${truncate(lastMessage.text, 35)}`
+    : lastMessage?.image
+    ? `${isMyMessage ? "You: " : ""}📷 Photo`
+    : lastMessage?.audioUrl
+    ? `${isMyMessage ? "You: " : ""}🎤 Voice Note`
     : "No messages yet";
 
   const time = formatTime(lastMessage?.createdAt);

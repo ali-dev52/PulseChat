@@ -12,6 +12,8 @@ import bcryptjs from 'bcryptjs'
 import { nanoid } from 'nanoid'
 import nodemailer from "nodemailer";
 import crypto from "crypto";
+import Conversation from "../models/conversation.js";
+import Message from "../models/message.js";
 
 
 const pvalidator = new Schema
@@ -337,6 +339,92 @@ const subscribeToPush = async (req, res) => {
   }
 };
 
+/* 10) Get User Dashboard Stats */
+const getUserDashboardStats = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    if (!userId) return error("Unauthorized", res);
+
+    const currentUser = await user.findById(userId).populate("blockedUsers", "full_name profilepicture email");
+    if (!currentUser) return error("User not found", res);
+
+    // Get active chats and longest conversation
+    const conversations = await Conversation.find({ participants: userId }).populate("lastMessage");
+    
+    let longestConversation = null;
+    let mostActiveChat = null;
+    let maxMessages = 0;
+
+    for (const conv of conversations) {
+      const messageCount = await Message.countDocuments({ conversationId: conv._id });
+      if (messageCount > maxMessages) {
+        maxMessages = messageCount;
+        mostActiveChat = conv;
+      }
+      // Simplistic check for longest conversation (can just use maxMessages for both, or time duration)
+    }
+    
+    // We will just use maxMessages for both to simplify
+    longestConversation = mostActiveChat;
+
+    // We need to fetch the OTHER participant in the most active chat
+    let mostActiveUser = null;
+    if (mostActiveChat) {
+      const otherParticipantId = mostActiveChat.participants.find(p => String(p) !== String(userId));
+      if (otherParticipantId) {
+        mostActiveUser = await user.findById(otherParticipantId).select("full_name profilepicture");
+      }
+    }
+
+    const totalMessagesSent = await Message.countDocuments({ sender: userId });
+    
+    let profileCompletion = 0;
+    const fields = ['full_name', 'email', 'profilepicture', 'bio', 'city', 'phonenumber'];
+    let filled = 0;
+    fields.forEach(f => {
+      if (currentUser[f]) filled++;
+    });
+    profileCompletion = Math.round((filled / fields.length) * 100);
+
+    success({
+      stats: {
+        mostActiveUser,
+        maxMessages,
+        totalMessagesSent,
+        profileCompletion,
+        blockedUsers: currentUser.blockedUsers || []
+      }
+    }, res);
+  } catch (err) {
+    catchErr(err, res);
+  }
+};
+
+/* 11) Toggle Block User */
+const toggleBlockUser = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { blockUserId } = req.params;
+
+    if (!userId) return error("Unauthorized", res);
+    if (String(userId) === String(blockUserId)) return error("You cannot block yourself", res);
+
+    const currentUser = await user.findById(userId);
+    const isBlocked = currentUser.blockedUsers.includes(blockUserId);
+
+    if (isBlocked) {
+      currentUser.blockedUsers.pull(blockUserId);
+      await currentUser.save();
+      success({ message: "User unblocked successfully", isBlocked: false }, res);
+    } else {
+      currentUser.blockedUsers.push(blockUserId);
+      await currentUser.save();
+      success({ message: "User blocked successfully", isBlocked: true }, res);
+    }
+  } catch (err) {
+    catchErr(err, res);
+  }
+};
 
 export {
   preSignup,
@@ -348,5 +436,7 @@ export {
   showAllUsers,
   fetchLoggedUser,
   updateProfile,
-  subscribeToPush
+  subscribeToPush,
+  getUserDashboardStats,
+  toggleBlockUser
 }

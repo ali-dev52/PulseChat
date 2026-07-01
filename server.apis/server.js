@@ -121,13 +121,12 @@ import { Server } from "socket.io";
 import dbconnect from "./database/dbconnect.js";
 
 // routes
-import products from "./routes/products.routes.js";
 import users from "./routes/user.routes.js";
 import adsRoute from "./routes/ads.Routes.js";
-import orders from "./routes/order.routes.js";
 import messageRoutes from "./routes/message.Routes.js";
 import conversationRoutes from "./routes/conversation.Routes.js";
 import userRoutes from "./routes/cuser.Routes.js";
+import adminRoutes from "./routes/admin.routes.js";
 
 // models
 import User from "./models/user.models.js";
@@ -245,13 +244,12 @@ app.get("/api/v1", (req, res) => {
   res.json({ message: "API is running" });
 });
 
-app.use("/api/v1/products", products);
 app.use("/api/v1/users", users);
-app.use("/api/v1/orders", orders);
 app.use("/api/v1", adsRoute);
 app.use("/api/v1/messages", messageRoutes);
 app.use("/api/v1/conversations", conversationRoutes);
 app.use("/api/v1/cusers", userRoutes);
+app.use("/api/v1/admin", adminRoutes);
 
 // ================= START SERVER =================
 const PORT = process.env.PORT || 5000;

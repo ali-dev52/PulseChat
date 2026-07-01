@@ -27,4 +27,16 @@ const protectRoute = async (req, res, next) => {
   }
 };
 
+export const isAdminRoute = async (req, res, next) => {
+  try {
+    if (req.user && (req.user.isadmin || req.user.issuperadmin)) {
+      next();
+    } else {
+      res.status(403).json({ message: "Forbidden: Admin access only" });
+    }
+  } catch (error) {
+    res.status(401).json({ message: "Unauthorized" });
+  }
+};
+
 export default protectRoute;

@@ -32,6 +32,10 @@ const userSchema = new Schema({
     type: Boolean,
     default: false
   },
+  issuperadmin: {
+    type: Boolean,
+    default: false
+  },
   isblocked: {
     type: Boolean,
     default: false
@@ -88,7 +92,8 @@ const userSchema = new Schema({
   pushSubscriptions: {
     type: [Object],
     default: []
-  }
+  },
+  blockedUsers: [{ type: Schema.Types.ObjectId, ref: "users" }]
 }, { timestamps: true })
 
 const user = model("users", userSchema)

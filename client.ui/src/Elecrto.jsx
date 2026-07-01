@@ -17,6 +17,11 @@ import { useAuth } from "./context/auth"
 import SplashScreen from "./components/shared/SplashScreen"
 import AboutApp from "./screens/info/AboutApp"
 import { useWebPush } from "./hooks/useWebPush"
+import AdminLayout from "./layouts/AdminLayout"
+import DashboardHome from "./screens/admin/DashboardHome"
+import UserManagement from "./screens/admin/UserManagement"
+import ChatManagement from "./screens/admin/ChatManagement"
+import UserDashboard from "./screens/user/UserDashboard"
 
 const Elecrto = () => {
   const [Auth] = useAuth()
@@ -68,6 +73,16 @@ const Elecrto = () => {
           <Route path="/success" element={<Success />} />
           <Route path="/imageupload" element={<ImageUpload />} />
           <Route path="/about" element={<AboutApp />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<DashboardHome />} />
+            <Route path="users" element={<UserManagement />} />
+            <Route path="chats" element={<ChatManagement />} />
+          </Route>
+
+          <Route path="/dashboard" element={<UserDashboard />} />
+
           <Route path="/*" element={<P404 />} />
         </Routes>
       </Router>

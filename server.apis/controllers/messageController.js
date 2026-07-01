@@ -41,6 +41,23 @@ export const sendMessage = async (req, res) => {
       return res.status(404).json({ error: "Conversation not found" });
     }
 
+    const receiverId = conversation.participants.find(
+      (p) => p.toString() !== senderId.toString()
+    );
+
+    // ✅ Block check
+    if (receiverId) {
+      const senderUser = await User.findById(senderId);
+      const receiverUser = await User.findById(receiverId);
+
+      if (senderUser.blockedUsers?.includes(receiverId)) {
+        return res.status(403).json({ error: "You have blocked this user. Unblock them to send messages." });
+      }
+      if (receiverUser.blockedUsers?.includes(senderId)) {
+        return res.status(403).json({ error: "You are blocked by this user." });
+      }
+    }
+
     const newMessage = await Message.create({
       conversationId: conversation._id,
       sender: senderId,
@@ -60,10 +77,6 @@ export const sendMessage = async (req, res) => {
         select: "_id full_name profilepicture",
       },
     }); // ✅ populate reply and reply sender
-
-    const receiverId = conversation.participants.find(
-      (p) => p.toString() !== senderId.toString()
-    );
 
     // update conversation lastMessage + unread
     conversation.lastMessage = newMessage._id;

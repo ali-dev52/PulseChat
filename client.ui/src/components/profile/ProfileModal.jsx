@@ -6,6 +6,7 @@ import api from "../../services/api";
 import { successtoast, errortoast } from "../../toastify/toastify";
 import ModalWrapper from "../shared/ModalWrapper";
 import AnimatedReveal from "../shared/AnimatedReveal";
+import { Camera, ShieldBan } from "lucide-react";
 
 const ProfileModal = ({ user, onClose }) => {
   const [Auth, setAuth] = useAuth();
@@ -22,6 +23,7 @@ const ProfileModal = ({ user, onClose }) => {
     city: user?.city || "",
     phonenumber: user?.phonenumber || "",
     full_name: user?.full_name || "",
+    profilepicture: user?.profilepicture || ""
   });
 
   if (!user) return null;
@@ -48,6 +50,37 @@ const ProfileModal = ({ user, onClose }) => {
       errortoast(err.response?.data?.error || "Failed to update profile");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result;
+        try {
+          const { data } = await api.post("/messages/upload-image", { image: base64String });
+          if (data.Location) {
+            setFormData({ ...formData, profilepicture: data.Location });
+          }
+        } catch (error) {
+          errortoast("Failed to upload image");
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleBlockUser = async () => {
+    try {
+      const { data } = await api.post(`/auth/block/${user._id}`);
+      if (data.success) {
+        successtoast(data.success.message);
+        onClose(); // Close modal on block
+      }
+    } catch (err) {
+      errortoast("Failed to block user");
     }
   };
 
@@ -91,10 +124,23 @@ const ProfileModal = ({ user, onClose }) => {
               {/* Profile Avatar Section */}
               <div className="relative flex flex-col items-center gap-4 text-center mt-6">
                 <div
-                  className="w-28 h-28 md:w-24 md:h-24 rounded-full flex items-center justify-center text-5xl md:text-4xl font-bold shadow-xl ring-4 ring-white dark:ring-slate-900 transition-all duration-300 hover:scale-105 relative z-10"
+                  className="w-28 h-28 md:w-24 md:h-24 rounded-full flex items-center justify-center text-5xl md:text-4xl font-bold shadow-xl ring-4 ring-white dark:ring-slate-900 transition-all duration-300 hover:scale-105 relative z-10 overflow-hidden group"
                   style={{ background: bg, color: fg }}
                 >
-                  {getInitials(user?.full_name)}
+                  {formData.profilepicture ? (
+                    <img src={formData.profilepicture} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    getInitials(user?.full_name)
+                  )}
+                  
+                  {editMode && (
+                    <label className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                      <Camera className="w-6 h-6 mb-1" />
+                      <span className="text-[10px] font-bold tracking-wider uppercase">Change</span>
+                      <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
+                    </label>
+                  )}
+
                   {!editMode && user?.isOnline && (
                     <span className="absolute bottom-1 right-1 w-6 h-6 md:w-5 md:h-5 rounded-full bg-green-500 border-4 border-white dark:border-slate-900" />
                   )}
@@ -239,13 +285,22 @@ const ProfileModal = ({ user, onClose }) => {
                 ) : (
                   <>
                     {!isMe && (
-                      <button
-                        onClick={onClose}
-                        className="flex-1 py-4 rounded-xl font-bold transition-all duration-200 bg-primary-500 text-white hover:bg-primary-600 hover:scale-[1.02] shadow-xl shadow-primary-500/30 flex items-center justify-center gap-2"
-                      >
-                        <MessageSquare className="w-5 h-5" />
-                        Send Message
-                      </button>
+                      <div className="flex w-full gap-2">
+                        <button
+                          onClick={handleBlockUser}
+                          className="w-14 py-4 rounded-xl font-bold transition-all duration-200 bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 flex items-center justify-center"
+                          title="Block User"
+                        >
+                          <ShieldBan className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={onClose}
+                          className="flex-1 py-4 rounded-xl font-bold transition-all duration-200 bg-primary-500 text-white hover:bg-primary-600 shadow-xl shadow-primary-500/30 flex items-center justify-center gap-2"
+                        >
+                          <MessageSquare className="w-5 h-5" />
+                          Send Message
+                        </button>
+                      </div>
                     )}
                   </>
                 )}

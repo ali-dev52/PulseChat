@@ -10,12 +10,13 @@ import {
   groupMessagesByDate,
 } from "../../utils/chat";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Search, MoreVertical, Paperclip, Smile, Send, Edit2, Trash2, Reply, Check, CheckCheck, AlertCircle, CornerDownRight, X, Phone, Video, Mic, Square, Trash, Image, Download, CornerUpRight } from "lucide-react";
+import { ArrowLeft, Search, MoreVertical, Paperclip, Smile, Send, Edit2, Trash2, Reply, Check, CheckCheck, AlertCircle, CornerDownRight, X, Phone, Video, Mic, Square, Trash, Image, Download, CornerUpRight, ShieldBan } from "lucide-react";
 import ProfileModal from "../profile/ProfileModal";
 import ForwardModal from "./ForwardModal";
 import AnimatedReveal from "../shared/AnimatedReveal";
 import VoicePlayer from "./VoicePlayer";
 import api from "../../services/api";
+import { successtoast, errortoast } from "../../toastify/toastify";
 
 const MessageStatus = ({ status }) => {
   if (status === "sending") return <Check className="w-3 h-3 text-slate-400 dark:text-slate-500" />;
@@ -52,7 +53,7 @@ const ReplyPreview = ({ msg, onCancel, loggedInUserId }) => {
 };
 
 const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
-  const [Auth] = useAuth();
+  const [Auth, setAuth] = useAuth();
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState(null);
   const [editingId, setEditingId] = useState(null);
@@ -208,6 +209,28 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
   const otherUser = conversation.user;
   const [bg, fg] = avatarColor(otherUser?._id || "");
   const grouped = groupMessagesByDate(messages);
+
+  const isBlocked = Auth?.User?.blockedUsers?.some(u => String(u._id || u) === String(otherUser?._id));
+
+  const handleToggleBlock = async () => {
+    try {
+      const { data } = await api.post(`/auth/block/${otherUser?._id}`);
+      if (data.success) {
+        successtoast(data.success.message);
+        
+        const updatedBlocked = isBlocked
+          ? Auth.User.blockedUsers.filter(u => String(u._id || u) !== String(otherUser?._id))
+          : [...(Auth.User.blockedUsers || []), otherUser?._id];
+          
+        setAuth({
+          ...Auth,
+          User: { ...Auth.User, blockedUsers: updatedBlocked }
+        });
+      }
+    } catch (err) {
+      errortoast("Failed to toggle block status");
+    }
+  };
 
   const handleInputChange = (e) => {
     setText(e.target.value);
@@ -459,6 +482,15 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
         </div>
 
         <div className="flex items-center gap-2">
+          <motion.button
+            onClick={handleToggleBlock}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title={isBlocked ? "Unblock User" : "Block User"}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isBlocked ? 'text-red-500 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'}`}
+          >
+            <ShieldBan className="w-5 h-5" />
+          </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

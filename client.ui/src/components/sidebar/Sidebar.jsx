@@ -3,7 +3,7 @@ import { useAuth } from "../../context/auth";
 import { getInitials, avatarColor } from "../../utils/chat";
 import ProfileModal from "../profile/ProfileModal";
 import { useNavigate } from "react-router-dom";
-import { MessageSquare, Sun, Moon, LogOut, Info } from "lucide-react";
+import { MessageSquare, Sun, Moon, LogOut, Info, Shield, LayoutDashboard } from "lucide-react";
 
 const NAV = [
   {
@@ -74,6 +74,28 @@ const Sidebar = ({ activeTab, onSelectTab, toggleDark }) => {
           >
             <Info className="w-5 h-5 group-hover:scale-110 transition-transform" />
           </button>
+
+          {/* Admin Button */}
+          {user?.isadmin && (
+            <button
+              onClick={() => navigate("/admin")}
+              title="Admin Dashboard"
+              className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 group shadow-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-purple-500 dark:text-purple-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:ring-2 hover:ring-purple-500/50"
+            >
+              <Shield className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            </button>
+          )}
+
+          {/* User Dashboard Button */}
+          {!user?.isadmin && (
+            <button
+              onClick={() => navigate("/dashboard")}
+              title="User Dashboard"
+              className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 group shadow-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-blue-500 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:ring-2 hover:ring-blue-500/50"
+            >
+              <LayoutDashboard className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            </button>
+          )}
         </div>
 
         {/* Spacer */}

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/auth";
-import Sidebar from "../components/sidebar/Sidebar";
 import ChatList from "../components/chat/ChatList";
 import ChatWindow from "../components/chat/ChatWindow";
 import NewChatModal from "../components/newChat/NewChatModal";
@@ -86,13 +85,7 @@ const Chatpage = ({ toggleDark }) => {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-sans selection:bg-primary-500/30 transition-colors duration-500">
-      <Sidebar
-        activeTab={activeTab}
-        onSelectTab={setActiveTab}
-        toggleDark={toggleDark}
-      />
-
+    <div className="flex h-screen overflow-hidden bg-slate-50 pt-14 dark:bg-slate-950 text-slate-900 dark:text-white font-sans selection:bg-primary-500/30 transition-colors duration-500 lg:pt-0">
       {activeTab === 'Chats' ? (
         <>
           <div className={`flex h-full flex-1 md:flex-none md:w-auto min-w-0 md:shrink-0 z-20 transition-transform ${selectedChat ? 'hidden md:flex' : 'flex'}`}>

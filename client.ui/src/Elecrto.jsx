@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import "./Css/Style.css"
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import AppLayout from "./layouts/AppLayout"
 import Activateaccount from "./screens/auth/Activateaccount"
 import ForgotPassword from "./screens/auth/Forgetpassword"
 import ResetPassword from "./screens/auth/Resetpassword"
@@ -56,14 +57,19 @@ const Elecrto = () => {
   const toggleDark = () => setDark((prev) => !prev)
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-500 font-sans">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white transition-colors duration-500 font-['Inter','Segoe_UI',sans-serif]">
       {initialLoading && <SplashScreen onComplete={() => setInitialLoading(false)} />}
       <div className={`transition-opacity duration-700 ${initialLoading ? 'opacity-0 h-screen overflow-hidden' : 'opacity-100'}`}>
         <Router>
           <ToastContainer theme={dark ? "dark" : "light"} />
         <Routes>
-          <Route path="/" element={<Chatpage toggleDark={toggleDark} isDark={dark} />} />
-          <Route path="/chatpage" element={<Chatpage toggleDark={toggleDark} isDark={dark} />} />
+          <Route element={<AppLayout toggleDark={toggleDark} isDark={dark} />}>
+            <Route path="/" element={<Chatpage toggleDark={toggleDark} isDark={dark} />} />
+            <Route path="/chatpage" element={<Chatpage toggleDark={toggleDark} isDark={dark} />} />
+            <Route path="/about" element={<AboutApp />} />
+            <Route path="/dashboard" element={<UserDashboard />} />
+          </Route>
+
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/:token" element={<Activateaccount />} />
@@ -72,7 +78,6 @@ const Elecrto = () => {
           <Route path="/resetpassword/:token" element={<ResetPassword />} />
           <Route path="/success" element={<Success />} />
           <Route path="/imageupload" element={<ImageUpload />} />
-          <Route path="/about" element={<AboutApp />} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminLayout />}>
@@ -80,8 +85,6 @@ const Elecrto = () => {
             <Route path="users" element={<UserManagement />} />
             <Route path="chats" element={<ChatManagement />} />
           </Route>
-
-          <Route path="/dashboard" element={<UserDashboard />} />
 
           <Route path="/*" element={<P404 />} />
         </Routes>

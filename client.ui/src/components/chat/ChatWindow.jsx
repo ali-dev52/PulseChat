@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/auth";
 import { useMessages } from "../../hooks/useMessages";
 import { useSocket } from "../../hooks/useSocket";
@@ -72,6 +73,7 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
   const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [showRestoreNotice, setShowRestoreNotice] = useState(false);
 
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
@@ -80,6 +82,7 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
   const audioTimerRef = useRef(null);
   const loggedInUserId = Auth?.User?._id;
   const socket = useSocket();
+  const navigate = useNavigate();
 
   const {
     messages,
@@ -96,6 +99,7 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
     markAsDownloaded,
     reportScreenshotAttempt,
     forwardMessage,
+    refreshMessages,
   } = useMessages(conversation?._id);
 
   // Anti-Screenshot and Blur Logic
@@ -216,20 +220,39 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
     try {
       const { data } = await api.post(`/auth/block/${otherUser?._id}`);
       if (data.success) {
-        successtoast(data.success.message);
-        
-        const updatedBlocked = isBlocked
-          ? Auth.User.blockedUsers.filter(u => String(u._id || u) !== String(otherUser?._id))
-          : [...(Auth.User.blockedUsers || []), otherUser?._id];
-          
+        const nextBlocked = !isBlocked;
+        const userName = otherUser?.full_name || otherUser?.name || "this user";
+        const message = nextBlocked
+          ? `You blocked ${userName}. Messages are now paused until you unblock them.`
+          : `You unblocked ${userName}. The conversation is restored and ready for messaging.`;
+        successtoast(message);
+
+        const updatedBlocked = nextBlocked
+          ? [...(Auth.User.blockedUsers || []), otherUser?._id]
+          : Auth.User.blockedUsers.filter(u => String(u._id || u) !== String(otherUser?._id));
+
         setAuth({
           ...Auth,
           User: { ...Auth.User, blockedUsers: updatedBlocked }
         });
+
+        if (!nextBlocked) {
+          setShowRestoreNotice(true);
+          await refreshMessages();
+        }
       }
     } catch (err) {
-      errortoast("Failed to toggle block status");
+      const userName = otherUser?.full_name || otherUser?.name || "this user";
+      const backendMessage = err?.response?.data?.error || err?.response?.data?.message;
+      errortoast(backendMessage || `Unable to update block status for ${userName}.`);
     }
+  };
+
+  const handleRestoreConversation = async () => {
+    await refreshMessages();
+    setShowRestoreNotice(false);
+    const userName = otherUser?.full_name || otherUser?.name || "this contact";
+    successtoast(`Conversation with ${userName} refreshed and ready to continue.`);
   };
 
   const handleInputChange = (e) => {
@@ -360,6 +383,11 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
   };
 
   const handleSend = async () => {
+    if (isBlocked) {
+      errortoast("You are blocked now. Unblock this user to continue chatting.");
+      return;
+    }
+
     if ((!text.trim() && !audioBlob && !imageBase64) || sending || uploadingAudio || uploadingImage) return;
     
     let audioUrl = null;
@@ -483,6 +511,15 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
 
         <div className="flex items-center gap-2">
           <motion.button
+            onClick={() => navigate("/dashboard")}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title="Go to dashboard"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </motion.button>
+          <motion.button
             onClick={handleToggleBlock}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -509,6 +546,20 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
           </motion.button>
         </div>
       </div>
+
+      {isBlocked && (
+        <div className="mx-4 mt-4 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300 flex items-center justify-between gap-3 shadow-sm">
+          <span>You blocked this user. They cannot send messages until you unblock them.</span>
+          <button onClick={handleToggleBlock} className="font-semibold underline-offset-2 hover:underline">Unblock</button>
+        </div>
+      )}
+
+      {showRestoreNotice && !isBlocked && (
+        <div className="mx-4 mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 flex items-center justify-between gap-3 shadow-sm">
+          <span>Conversation restored. Refresh it anytime to view the latest messages.</span>
+          <button onClick={handleRestoreConversation} className="font-semibold underline-offset-2 hover:underline">Restore</button>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 flex flex-col gap-2 custom-scrollbar bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-500">
@@ -856,8 +907,9 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
                   value={text}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
-                  placeholder={replyTo ? "Type a reply..." : "Type a message..."}
-                  className="w-full h-full py-3.5 px-6 pr-24 bg-transparent text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 text-[15px] outline-none"
+                  disabled={isBlocked}
+                  placeholder={replyTo ? "Type a reply..." : isBlocked ? "Messaging is paused while this user is blocked" : "Type a message..."}
+                  className="w-full h-full py-3.5 px-6 pr-24 bg-transparent text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 text-[15px] outline-none disabled:cursor-not-allowed"
                 />
                 <label title="Attach Image" className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer absolute right-12 z-10">
                   <Paperclip className="w-5 h-5" />

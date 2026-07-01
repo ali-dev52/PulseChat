@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/auth';
-import { Users, ShoppingCart, Package, MessageSquare } from 'lucide-react';
+import { Users, ShoppingCart, Package, MessageSquare, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -38,6 +39,7 @@ const DashboardHome = () => {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [auth] = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -82,9 +84,41 @@ const DashboardHome = () => {
         <div className="relative z-10">
           <h1 className="text-3xl font-bold mb-2">Dashboard Overview</h1>
           <p className="text-blue-100 opacity-90">Welcome back to Pulse Admin. Here is what is happening today.</p>
+          <div className="flex flex-wrap gap-3 mt-6">
+            <button onClick={() => navigate("/")} className="px-4 py-2.5 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 font-semibold flex items-center gap-2 hover:bg-white/20 transition-all">
+              Open app <ArrowRight className="w-4 h-4" />
+            </button>
+            <button onClick={() => navigate("/admin/users")} className="px-4 py-2.5 rounded-xl bg-slate-950/20 border border-white/20 font-semibold flex items-center gap-2 hover:bg-slate-950/30 transition-all">
+              <ShieldCheck className="w-4 h-4" /> Manage users
+            </button>
+          </div>
         </div>
         <div className="absolute right-0 top-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
         <div className="absolute left-0 bottom-0 w-64 h-64 bg-white/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3"></div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/70 p-4 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500"><Sparkles className="w-4 h-4" /></div>
+            <p className="font-semibold text-slate-800 dark:text-white">Live insights</p>
+          </div>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Monitor growth, conversations and moderation activity in one view.</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/70 p-4 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500"><MessageSquare className="w-4 h-4" /></div>
+            <p className="font-semibold text-slate-800 dark:text-white">Fast moderation</p>
+          </div>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Review activity quickly and keep the experience healthy for everyone.</p>
+        </div>
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/70 p-4 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 rounded-xl bg-green-500/10 text-green-500"><ShieldCheck className="w-4 h-4" /></div>
+            <p className="font-semibold text-slate-800 dark:text-white">Safe conversations</p>
+          </div>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Block and unblock controls are now easier to understand and manage.</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

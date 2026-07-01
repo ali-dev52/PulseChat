@@ -54,7 +54,7 @@ export const sendMessage = async (req, res) => {
         return res.status(403).json({ error: "You have blocked this user. Unblock them to send messages." });
       }
       if (receiverUser.blockedUsers?.includes(senderId)) {
-        return res.status(403).json({ error: "You are blocked by this user." });
+        return res.status(403).json({ error: "You are blocked now. Unblock this user to continue chatting." });
       }
     }
 

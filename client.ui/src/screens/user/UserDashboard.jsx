@@ -1,16 +1,20 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/auth";
 import { Baseurl } from "../../config/apis";
 import { toast } from "react-toastify";
-import { Activity, Clock, ShieldBan, User, MessageSquare, CheckCircle, Percent } from "lucide-react";
+import { Activity, Clock, ShieldBan, User, MessageSquare, CheckCircle, ArrowRight, Sparkles, ShieldCheck, BellRing, Search, Star, TrendingUp, MessageCircleMore, Lock, LayoutDashboard, MessageSquarePlus, Settings, MoonStar, SunMedium, ChevronRight, BarChart3 } from "lucide-react";
 import ProfileModal from "../../components/profile/ProfileModal";
 
 const UserDashboard = () => {
   const [auth] = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showProfile, setShowProfile] = useState(false);
+  const [activeSection, setActiveSection] = useState("overview");
+  const [isProMode, setIsProMode] = useState(true);
 
   const fetchStats = async () => {
     try {
@@ -31,17 +35,17 @@ const UserDashboard = () => {
     if (auth?.token) fetchStats();
   }, [auth]);
 
-  const unblockUser = async (userId) => {
+  const unblockUser = async (userId, userName) => {
     try {
       const { data } = await axios.post(`${Baseurl}/auth/block/${userId}`, {}, {
         headers: { Authorization: `Bearer ${auth.token}` }
       });
       if (data.success) {
-        toast.success(data.success.message);
+        toast.success(`You unblocked ${userName}. Messaging is restored.`);
         setStats({ ...stats, blockedUsers: stats.blockedUsers.filter(u => u._id !== userId) });
       }
     } catch (error) {
-      toast.error("Failed to unblock user");
+      toast.error(`Failed to unblock ${userName || "user"}`);
     }
   };
 
@@ -54,167 +58,253 @@ const UserDashboard = () => {
   }
 
   const completion = stats?.profileCompletion || 0;
+  const activityData = [
+    { label: "Messages", value: stats?.totalMessagesSent || 0, tone: "from-cyan-500 to-blue-500" },
+    { label: "Active chat", value: stats?.maxMessages || 0, tone: "from-violet-500 to-fuchsia-500" },
+    { label: "Blocked", value: stats?.blockedUsers?.length || 0, tone: "from-rose-500 to-orange-500" },
+  ];
+  const sectionMeta = {
+    overview: {
+      eyebrow: "Overview",
+      title: "Your command center is ready",
+      description: "Review your activity, privacy controls, and latest conversations from one polished surface.",
+    },
+    chats: {
+      eyebrow: "Chats",
+      title: "Stay in sync with your most active conversations",
+      description: "Jump back into recent discussions and keep your messaging momentum alive.",
+    },
+    safety: {
+      eyebrow: "Safety",
+      title: "Privacy controls are always close at hand",
+      description: "Block, unblock, and monitor your safety preferences without breaking your flow.",
+    },
+    settings: {
+      eyebrow: "Settings",
+      title: "Fine-tune your workspace for a calmer experience",
+      description: "Manage profile details, preferences, and protection settings from a single place.",
+    },
+  };
+  const quickActions = [
+    { title: "Open chats", description: "Jump back into ongoing conversations", icon: MessageCircleMore, action: () => navigate("/") },
+    { title: "Edit profile", description: "Keep your profile polished and complete", icon: User, action: () => setShowProfile(true) },
+    { title: "About app", description: "Discover the features and experience", icon: Star, action: () => navigate("/about") },
+  ];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-[#0b141a] text-slate-900 dark:text-white font-sans selection:bg-primary-500/30 transition-colors duration-500 relative">
-      
-      {/* Animated Background Gradients */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-500/20 rounded-full mix-blend-multiply filter blur-[128px] animate-pulse pointer-events-none"></div>
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full mix-blend-multiply filter blur-[128px] animate-pulse pointer-events-none" style={{ animationDelay: '2s' }}></div>
+    <div className={`flex h-screen overflow-hidden ${isProMode ? "bg-[radial-gradient(circle_at_top_left,_rgba(2,132,199,0.24),_transparent_32%),linear-gradient(135deg,_#020617_0%,_#07111d_45%,_#030712_100%)] text-slate-100" : "bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),_transparent_32%),linear-gradient(135deg,_#f8fbff_0%,_#f5f7fb_50%,_#eef4ff_100%)] text-slate-900"} font-['Inter','Segoe_UI',sans-serif] selection:bg-primary-500/30 transition-colors duration-500 relative`}>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-500/20 rounded-full blur-[140px] animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-[140px] animate-pulse" style={{ animationDelay: "2s" }}></div>
+      </div>
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar z-10">
-        <div className="max-w-6xl mx-auto space-y-8 mt-4">
-          
-          {/* Header Card - Glassmorphism */}
-          <div className="relative overflow-hidden bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-8 rounded-[2rem] shadow-xl border border-white/20 dark:border-white/5">
-            <div className="absolute right-0 top-0 w-64 h-64 bg-gradient-to-bl from-primary-500/30 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-            
-            <div className="flex flex-col md:flex-row justify-between items-center gap-6 relative z-10">
-              <div className="flex items-center gap-6">
-                <div className="relative w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-primary-500 to-blue-500 shadow-lg">
-                  <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden border-2 border-white dark:border-slate-900">
+      <aside className={`relative z-20 hidden w-72 shrink-0 border-r ${isProMode ? "border-slate-800/80 bg-slate-950/80" : "border-slate-200/80 bg-white/80"} p-5 backdrop-blur-xl lg:flex lg:flex-col`}>
+        <div className="flex items-center gap-3 rounded-2xl border border-slate-800/70 bg-slate-900/70 p-3 shadow-lg">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg">
+            <LayoutDashboard className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">Pulse Dashboard</p>
+            <p className={`text-xs ${isProMode ? "text-slate-400" : "text-slate-500"}`}>Professional workspace</p>
+          </div>
+        </div>
+
+        <nav className="mt-6 space-y-2">
+          {[
+            { id: "overview", label: "Overview", icon: LayoutDashboard },
+            { id: "chats", label: "Chats", icon: MessageSquarePlus },
+            { id: "safety", label: "Safety", icon: ShieldBan },
+            { id: "settings", label: "Settings", icon: Settings },
+          ].map(({ id, label, icon: Icon }) => (
+            <button key={id} onClick={() => setActiveSection(id)} className={`flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left transition ${activeSection === id ? (isProMode ? "bg-primary-500/15 text-white" : "bg-primary-50 text-primary-700") : (isProMode ? "text-slate-400 hover:bg-slate-800/70 hover:text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900")}`}>
+              <span className="flex items-center gap-3">
+                <Icon className="h-4 w-4" /> {label}
+              </span>
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          ))}
+        </nav>
+
+        <div className={`mt-6 rounded-[1.5rem] border p-4 ${isProMode ? "border-slate-800 bg-slate-900/70" : "border-slate-200 bg-slate-50/80"}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold">Pro mode</p>
+              <p className={`text-xs ${isProMode ? "text-slate-400" : "text-slate-500"}`}>Dark premium UI</p>
+            </div>
+            <button onClick={() => setIsProMode((prev) => !prev)} className={`rounded-2xl p-2 transition ${isProMode ? "bg-slate-800 text-white" : "bg-white text-slate-700 shadow-sm"}`}>
+              {isProMode ? <MoonStar className="h-4 w-4" /> : <SunMedium className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-auto rounded-[1.5rem] border border-slate-800/70 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 p-4">
+          <p className="text-sm font-semibold">Need a quick handoff?</p>
+          <p className={`mt-1 text-sm ${isProMode ? "text-slate-400" : "text-slate-500"}`}>Jump to your conversations or keep refining your profile.</p>
+        </div>
+      </aside>
+
+      <div className="relative z-10 flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+        <div className="mx-auto max-w-7xl space-y-6">
+          <div className={`rounded-[2rem] border p-6 shadow-[0_20px_70px_rgba(15,23,42,0.08)] backdrop-blur-xl md:p-8 ${isProMode ? "border-slate-800/80 bg-slate-900/80" : "border-slate-200/80 bg-white/80"}`}>
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-4">
+                <div className="relative h-16 w-16 shrink-0 rounded-2xl border border-slate-200 bg-gradient-to-br from-primary-500 to-blue-600 p-[2px] shadow-lg dark:border-slate-800">
+                  <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-[14px] bg-white dark:bg-slate-950">
                     {auth?.User?.profilepicture ? (
-                      <img src={auth.User.profilepicture} alt="Profile" className="w-full h-full object-cover" />
+                      <img src={auth.User.profilepicture} alt="Profile" className="h-full w-full object-cover" />
                     ) : (
-                      <span className="text-3xl font-bold text-primary-500">{auth?.User?.full_name?.charAt(0) || "U"}</span>
+                      <span className="text-xl font-semibold text-primary-600">{auth?.User?.full_name?.charAt(0) || "U"}</span>
                     )}
                   </div>
                 </div>
                 <div>
-                  <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-300 mb-1">
-                    Welcome back, {auth?.User?.full_name?.split(' ')[0]}
+                  <p className={`text-sm font-semibold uppercase tracking-[0.24em] ${isProMode ? "text-slate-400" : "text-slate-500"}`}>Dashboard</p>
+                  <h1 className={`text-2xl font-semibold tracking-tight sm:text-3xl ${isProMode ? "text-white" : "text-slate-900"}`}>
+                    Welcome back, {auth?.User?.full_name?.split(" ")[0] || "there"}
                   </h1>
-                  <p className="text-slate-500 dark:text-slate-400 font-medium">Your personal communication hub.</p>
+                  <p className={`mt-1 text-sm ${isProMode ? "text-slate-400" : "text-slate-600"}`}>A focused workspace for your conversations, settings, and safety controls.</p>
                 </div>
               </div>
-              <button 
-                onClick={() => setShowProfile(true)}
-                className="px-6 py-3 bg-gradient-to-r from-primary-500 to-blue-600 text-white rounded-xl shadow-lg shadow-primary-500/30 hover:shadow-primary-500/50 hover:-translate-y-0.5 transition-all duration-300 font-bold flex items-center gap-2 group"
-              >
-                <User size={18} className="group-hover:scale-110 transition-transform" /> 
-                Edit Profile
-              </button>
+              <div className="flex flex-wrap gap-3">
+                <button onClick={() => navigate("/")} className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition hover:-translate-y-0.5 ${isProMode ? "bg-white text-slate-900" : "bg-slate-900 text-white dark:bg-white dark:text-slate-900"}`}>
+                  <MessageCircleMore className="h-4 w-4" /> Open chats
+                </button>
+                <button onClick={() => setShowProfile(true)} className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition hover:border-primary-400 hover:text-primary-600 ${isProMode ? "border-slate-700 bg-slate-800/80 text-slate-200" : "border-slate-200 bg-white/70 text-slate-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200"}`}>
+                  <User className="h-4 w-4" /> Edit profile
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            {/* Stats Column */}
-            <div className="col-span-1 lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              {/* Profile Completion */}
-              <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-6 rounded-[2rem] shadow-sm border border-white/20 dark:border-white/5 flex items-center gap-6 hover:shadow-md transition-all group">
-                <div className="relative w-20 h-20 flex-shrink-0">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                    <path strokeDasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" className="text-slate-100 dark:text-slate-800" strokeWidth="3" />
-                    <path strokeDasharray={`${completion}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" className="text-primary-500 transition-all duration-1000 ease-out" strokeWidth="3" strokeLinecap="round" />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center font-bold text-lg">{completion}%</div>
+          <div className="grid gap-4 xl:grid-cols-[1.4fr_0.9fr]">
+            <div className={`rounded-[1.75rem] border p-5 shadow-[0_12px_40px_rgba(15,23,42,0.05)] backdrop-blur-xl ${isProMode ? "border-slate-800/80 bg-slate-900/80" : "border-slate-200/80 bg-white/80"}`}>
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                  <p className={`text-sm font-semibold uppercase tracking-[0.2em] ${isProMode ? "text-slate-400" : "text-slate-500"}`}>{sectionMeta[activeSection].eyebrow}</p>
+                  <h2 className={`mt-1 text-lg font-semibold ${isProMode ? "text-white" : "text-slate-900"}`}>{sectionMeta[activeSection].title}</h2>
+                  <p className={`mt-2 text-sm ${isProMode ? "text-slate-400" : "text-slate-600"}`}>{sectionMeta[activeSection].description}</p>
+                </div>
+                <div className="rounded-2xl bg-primary-50 p-2 text-primary-600 dark:bg-primary-500/10 dark:text-primary-400">
+                  <BarChart3 className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                {activityData.map((item) => (
+                  <div key={item.label} className={`rounded-[1.2rem] border p-4 ${isProMode ? "border-slate-800 bg-slate-800/70" : "border-slate-200 bg-slate-50/80"}`}>
+                    <div className={`h-2 w-full rounded-full bg-gradient-to-r ${item.tone}`} />
+                    <p className={`mt-3 text-sm ${isProMode ? "text-slate-400" : "text-slate-600"}`}>{item.label}</p>
+                    <p className={`mt-1 text-xl font-semibold ${isProMode ? "text-white" : "text-slate-900"}`}>{item.value}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6">
+                <p className={`text-sm font-semibold uppercase tracking-[0.2em] ${isProMode ? "text-slate-400" : "text-slate-500"}`}>Quick actions</p>
+                <div className="mt-3 grid gap-3 md:grid-cols-3">
+                  {quickActions.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button key={item.title} onClick={item.action} className={`rounded-[1.25rem] border p-4 text-left transition hover:-translate-y-0.5 hover:border-primary-400 ${isProMode ? "border-slate-800 bg-slate-800/70 hover:bg-slate-800" : "border-slate-200 bg-slate-50/80 hover:bg-white dark:border-slate-800 dark:bg-slate-800/70 dark:hover:bg-slate-800"}`}>
+                        <div className="mb-3 inline-flex rounded-2xl bg-white p-2 text-primary-600 shadow-sm dark:bg-slate-900 dark:text-primary-400">
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <p className={`font-semibold ${isProMode ? "text-white" : "text-slate-900"}`}>{item.title}</p>
+                        <p className={`mt-1 text-sm ${isProMode ? "text-slate-400" : "text-slate-500"}`}>{item.description}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className={`rounded-[1.75rem] border p-5 shadow-[0_12px_40px_rgba(16,185,129,0.12)] backdrop-blur-xl ${isProMode ? "border-emerald-500/20 bg-emerald-500/10" : "border-emerald-200/80 bg-emerald-50/80 dark:border-emerald-500/20 dark:bg-emerald-500/10"}`}>
+              <div className="flex items-start gap-3">
+                <div className="rounded-2xl bg-white/80 p-2 text-emerald-600 shadow-sm dark:bg-slate-900/70 dark:text-emerald-400">
+                  <BellRing className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-slate-500 dark:text-slate-400 font-semibold mb-1 flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" /> Profile Setup
-                  </h3>
-                  <p className="text-sm font-medium">Complete your profile to connect better with others.</p>
+                  <p className={`text-sm font-semibold uppercase tracking-[0.2em] ${isProMode ? "text-emerald-300" : "text-emerald-700"}`}>Smart control</p>
+                  <h2 className={`mt-1 text-lg font-semibold ${isProMode ? "text-white" : "text-slate-900"}`}>Blocked contacts stay private until you choose otherwise.</h2>
+                  <p className={`mt-2 text-sm ${isProMode ? "text-slate-400" : "text-slate-600"}`}>You can unblock anytime and restore the conversation instantly from the chat view.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-[1.75rem] border border-slate-200/80 bg-white/80 p-6 shadow-[0_12px_40px_rgba(15,23,42,0.05)] backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/80">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="rounded-2xl bg-blue-50 p-2 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"><TrendingUp className="h-5 w-5" /></div>
+                  <div>
+                    <p className={`text-sm font-semibold uppercase tracking-[0.2em] ${isProMode ? "text-slate-400" : "text-slate-500"}`}>Profile strength</p>
+                    <h3 className={`text-lg font-semibold ${isProMode ? "text-white" : "text-slate-900"}`}>{completion}% complete</h3>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="relative h-20 w-20">
+                    <svg className="h-20 w-20 -rotate-90" viewBox="0 0 36 36">
+                      <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" className="text-slate-200 dark:text-slate-800" strokeWidth="3" />
+                      <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" className="text-primary-500" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${completion}, 100`} />
+                    </svg>
+                    <div className={`absolute inset-0 flex items-center justify-center text-sm font-semibold ${isProMode ? "text-white" : "text-slate-800"}`}>{completion}%</div>
+                  </div>
+                  <p className={`text-sm ${isProMode ? "text-slate-400" : "text-slate-600"}`}>A fuller profile helps people recognize and trust you faster.</p>
                 </div>
               </div>
 
-              {/* Total Messages Sent */}
-              <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-6 rounded-[2rem] shadow-sm border border-white/20 dark:border-white/5 flex flex-col justify-center hover:shadow-md transition-all">
-                <span className="text-sm font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2 mb-2 uppercase tracking-wider">
-                  <MessageSquare className="w-4 h-4 text-blue-500" /> Messages Sent
-                </span>
-                <div className="flex items-end gap-2">
-                  <h3 className="text-5xl font-black text-slate-800 dark:text-white">{stats?.totalMessagesSent || 0}</h3>
-                  <span className="text-sm text-slate-400 mb-1 font-medium">total</span>
+              <div className={`rounded-[1.75rem] border p-6 shadow-[0_12px_40px_rgba(15,23,42,0.05)] backdrop-blur-xl ${isProMode ? "border-slate-800/80 bg-slate-900/80" : "border-slate-200/80 bg-white/80"}`}>
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="rounded-2xl bg-violet-50 p-2 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400"><MessageSquare className="h-5 w-5" /></div>
+                  <div>
+                    <p className={`text-sm font-semibold uppercase tracking-[0.2em] ${isProMode ? "text-slate-400" : "text-slate-500"}`}>Messaging volume</p>
+                    <h3 className={`text-lg font-semibold ${isProMode ? "text-white" : "text-slate-900"}`}>{stats?.totalMessagesSent || 0} messages sent</h3>
+                  </div>
+                </div>
+                <div className={`rounded-[1.25rem] p-4 ${isProMode ? "bg-slate-800/70" : "bg-slate-50 dark:bg-slate-800/70"}`}>
+                  <p className={`text-sm ${isProMode ? "text-slate-400" : "text-slate-600"}`}>Your most active conversation is with <span className={`font-semibold ${isProMode ? "text-white" : "text-slate-900"}`}>{stats?.mostActiveUser?.full_name || "no one yet"}</span>.</p>
+                  <p className={`mt-2 text-sm ${isProMode ? "text-slate-500" : "text-slate-500"}`}>{stats?.maxMessages || 0} messages exchanged so far.</p>
                 </div>
               </div>
-
-              {/* Most Active Chat */}
-              <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-6 rounded-[2rem] shadow-sm border border-white/20 dark:border-white/5 hover:shadow-md transition-all">
-                <span className="text-sm font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2 mb-4 uppercase tracking-wider">
-                  <Activity className="w-4 h-4 text-orange-500" /> Most Active Chat
-                </span>
-                {stats?.mostActiveUser ? (
-                  <div className="flex items-center gap-4 bg-slate-50/50 dark:bg-slate-800/50 p-3 rounded-2xl">
-                    <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
-                      {stats.mostActiveUser.profilepicture ? (
-                        <img src={stats.mostActiveUser.profilepicture} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        stats.mostActiveUser.full_name?.charAt(0) || "?"
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg">{stats.mostActiveUser.full_name}</h3>
-                      <p className="text-xs text-slate-500 font-medium">{stats.maxMessages} messages exchanged</p>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-slate-400 text-sm font-medium">No active chats yet.</p>
-                )}
-              </div>
-
-              {/* Longest Conversation */}
-              <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-6 rounded-[2rem] shadow-sm border border-white/20 dark:border-white/5 hover:shadow-md transition-all">
-                <span className="text-sm font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2 mb-4 uppercase tracking-wider">
-                  <Clock className="w-4 h-4 text-purple-500" /> Longest Record
-                </span>
-                {stats?.mostActiveUser ? (
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-3xl font-black text-purple-500">{stats.maxMessages}</h3>
-                      <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Messages in a single thread</p>
-                      <p className="text-xs text-slate-500 mt-1">With {stats.mostActiveUser.full_name}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-slate-400 text-sm font-medium">No data available.</p>
-                )}
-              </div>
-
             </div>
 
-            {/* Blocked Users Column */}
-            <div className="col-span-1">
-              <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-6 rounded-[2rem] shadow-sm border border-white/20 dark:border-white/5 h-full flex flex-col">
-                <h3 className="font-bold flex items-center gap-2 mb-6 text-lg">
-                  <ShieldBan className="w-5 h-5 text-red-500" /> Blocked Users
-                </h3>
-                
-                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-                  {stats?.blockedUsers?.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center opacity-50 p-6">
-                      <ShieldBan className="w-12 h-12 mb-3" />
-                      <p className="text-sm font-medium text-slate-500">You haven't blocked anyone.<br/>Your chat list is clear!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {stats?.blockedUsers?.map(user => (
-                        <div key={user._id} className="flex justify-between items-center p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700/50 hover:border-red-200 dark:hover:border-red-900/50 transition-colors group">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden flex-shrink-0">
-                              {user.profilepicture ? (
-                                <img src={user.profilepicture} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <span className="font-bold text-slate-500">{user.full_name?.charAt(0) || "?"}</span>
-                              )}
-                            </div>
-                            <span className="font-bold text-sm truncate">{user.full_name}</span>
-                          </div>
-                          <button 
-                            onClick={() => unblockUser(user._id)}
-                            className="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-red-50 hover:text-red-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-red-500/20 dark:hover:text-red-400 rounded-xl transition-colors flex-shrink-0"
-                          >
-                            Unblock
-                          </button>
+            <div className={`rounded-[1.75rem] border p-6 shadow-[0_12px_40px_rgba(15,23,42,0.05)] backdrop-blur-xl ${isProMode ? "border-red-500/20 bg-slate-900/80" : "border-red-200/70 bg-white/80 dark:border-red-500/20 dark:bg-slate-900/80"}`}>
+              <div className="mb-4 flex items-center gap-3">
+                <div className="rounded-2xl bg-red-50 p-2 text-red-600 dark:bg-red-500/10 dark:text-red-400"><ShieldBan className="h-5 w-5" /></div>
+                <div>
+                  <p className={`text-sm font-semibold uppercase tracking-[0.2em] ${isProMode ? "text-slate-400" : "text-slate-500"}`}>Safety controls</p>
+                  <h3 className={`text-lg font-semibold ${isProMode ? "text-white" : "text-slate-900"}`}>Blocked users</h3>
+                </div>
+              </div>
+              <div className={`mb-4 rounded-[1.25rem] border p-3 text-sm ${isProMode ? "border-red-500/20 bg-red-500/10 text-red-300" : "border-red-200 bg-red-50/90 text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-300"}`}>
+                <div className="flex items-center gap-2 font-semibold"><ShieldCheck className="h-4 w-4" /> Recovery from anywhere</div>
+                <p className="mt-1">Unblock anytime and restore conversations without losing the thread.</p>
+              </div>
+              <div className="space-y-3">
+                {stats?.blockedUsers?.length === 0 ? (
+                  <div className={`flex h-32 flex-col items-center justify-center rounded-[1.25rem] border border-dashed text-center ${isProMode ? "border-slate-700 bg-slate-800/50" : "border-slate-300 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-800/50"}`}>
+                    <Lock className={`mb-2 h-8 w-8 ${isProMode ? "text-slate-500" : "text-slate-400"}`} />
+                    <p className={`text-sm font-medium ${isProMode ? "text-slate-400" : "text-slate-500 dark:text-slate-400"}`}>No contacts are currently blocked.</p>
+                  </div>
+                ) : (
+                  stats.blockedUsers.map((user) => (
+                    <div key={user._id} className={`flex items-center justify-between rounded-[1.25rem] border px-3 py-3 ${isProMode ? "border-slate-800 bg-slate-800/70" : "border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/70"}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                          {user.profilepicture ? <img src={user.profilepicture} alt="" className="h-full w-full object-cover" /> : <span className="text-sm font-semibold text-slate-600">{user.full_name?.charAt(0) || "?"}</span>}
                         </div>
-                      ))}
+                        <div>
+                          <p className="font-semibold text-slate-900 dark:text-white">{user.full_name}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Paused from messaging</p>
+                        </div>
+                      </div>
+                      <button onClick={() => unblockUser(user._id, user.full_name)} className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${isProMode ? "bg-white text-slate-900 hover:bg-red-600 hover:text-white" : "bg-slate-900 text-white hover:bg-red-600 dark:bg-white dark:text-slate-900"}`}>
+                        Unblock
+                      </button>
                     </div>
-                  )}
-                </div>
+                  ))
+                )}
               </div>
             </div>
-
           </div>
         </div>
       </div>

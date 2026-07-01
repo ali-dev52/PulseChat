@@ -244,6 +244,7 @@ app.get("/api/v1", (req, res) => {
   res.json({ message: "API is running" });
 });
 
+app.use("/api/v1/auth", users);
 app.use("/api/v1/users", users);
 app.use("/api/v1", adsRoute);
 app.use("/api/v1/messages", messageRoutes);

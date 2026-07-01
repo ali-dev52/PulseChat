@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import api from "../services/api";
 import { useSocket } from "./useSocket";
 import { useAuth } from "../context/auth";
+import { errortoast } from "../toastify/toastify";
 
 export const useMessages = (conversationId) => {
   const [messages, setMessages] = useState([]);
@@ -204,11 +205,19 @@ export const useMessages = (conversationId) => {
         );
       } catch (err) {
         console.error("sendMessage error:", err);
-        setMessages((prev) =>
-          prev.map((m) =>
-            m._id === optimisticId ? { ...m, status: "failed" } : m
-          )
-        );
+        const status = err?.response?.status;
+        const backendMessage = err?.response?.data?.error || err?.response?.data?.message;
+        if (status === 403) {
+          setMessages((prev) => prev.filter((m) => m._id !== optimisticId));
+          errortoast(backendMessage || "You are blocked now. Unblock this user to continue chatting.");
+        } else {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m._id === optimisticId ? { ...m, status: "failed" } : m
+            )
+          );
+          errortoast(backendMessage || "Failed to send message.");
+        }
       } finally {
         setSending(false);
       }
@@ -325,6 +334,19 @@ export const useMessages = (conversationId) => {
       console.error("markAsDownloaded error:", err);
     }
   }, [loggedInUserId]);
+
+  const refreshMessages = useCallback(async () => {
+    if (!conversationId) return;
+    try {
+      setLoading(true);
+      const { data } = await api.get(`/messages/${conversationId}`);
+      setMessages(data.messages || data);
+    } catch (err) {
+      console.error("refreshMessages error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [conversationId]);
 
   const reportScreenshotAttempt = useCallback(async () => {
     if (!conversationId) return;

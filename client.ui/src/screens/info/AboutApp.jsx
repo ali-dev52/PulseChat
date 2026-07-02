@@ -2,16 +2,36 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Info, Zap, ShieldCheck, Cpu, Users, Globe, MessageSquare, Mail, Phone, MapPin, ExternalLink, Heart, Server, Database, Code2, Rocket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from "../../context/auth";
 
 const AboutApp = () => {
+    const [auth] = useAuth();
+
   const navigate = useNavigate();
 
   const fadeIn = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6 } } };
   const staggerContainer = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } };
 
   return (
+    
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 overflow-x-hidden selection:bg-primary-500/30">
-      
+      <header className="h-16 flex items-center justify-between px-6 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
+          <div className="flex-1">
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">
+              Pulse Intro
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-4 ml-auto">
+             <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-md overflow-hidden">
+               {auth?.User?.profilepicture ? (
+                  <img src={auth.User.profilepicture} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  auth?.User?.full_name?.charAt(0) || 'A'
+                )}
+             </div>
+          </div>
+        </header>
 
       <main className="pt-24 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
 

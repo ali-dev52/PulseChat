@@ -97,50 +97,7 @@ const UserDashboard = () => {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-[140px] animate-pulse" style={{ animationDelay: "2s" }}></div>
       </div>
 
-      <aside className={`relative z-20 hidden w-72 shrink-0 border-r ${isProMode ? "border-slate-800/80 bg-slate-950/80" : "border-slate-200/80 bg-white/80"} p-5 backdrop-blur-xl lg:flex lg:flex-col`}>
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-800/70 bg-slate-900/70 p-3 shadow-lg">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg">
-            <LayoutDashboard className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold">Pulse Dashboard</p>
-            <p className={`text-xs ${isProMode ? "text-slate-400" : "text-slate-500"}`}>Professional workspace</p>
-          </div>
-        </div>
-
-        <nav className="mt-6 space-y-2">
-          {[
-            { id: "overview", label: "Overview", icon: LayoutDashboard },
-            { id: "chats", label: "Chats", icon: MessageSquarePlus },
-            { id: "safety", label: "Safety", icon: ShieldBan },
-            { id: "settings", label: "Settings", icon: Settings },
-          ].map(({ id, label, icon: Icon }) => (
-            <button key={id} onClick={() => setActiveSection(id)} className={`flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left transition ${activeSection === id ? (isProMode ? "bg-primary-500/15 text-white" : "bg-primary-50 text-primary-700") : (isProMode ? "text-slate-400 hover:bg-slate-800/70 hover:text-white" : "text-slate-600 hover:bg-slate-100 hover:text-slate-900")}`}>
-              <span className="flex items-center gap-3">
-                <Icon className="h-4 w-4" /> {label}
-              </span>
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          ))}
-        </nav>
-
-        <div className={`mt-6 rounded-[1.5rem] border p-4 ${isProMode ? "border-slate-800 bg-slate-900/70" : "border-slate-200 bg-slate-50/80"}`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold">Pro mode</p>
-              <p className={`text-xs ${isProMode ? "text-slate-400" : "text-slate-500"}`}>Dark premium UI</p>
-            </div>
-            <button onClick={() => setIsProMode((prev) => !prev)} className={`rounded-2xl p-2 transition ${isProMode ? "bg-slate-800 text-white" : "bg-white text-slate-700 shadow-sm"}`}>
-              {isProMode ? <MoonStar className="h-4 w-4" /> : <SunMedium className="h-4 w-4" />}
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-auto rounded-[1.5rem] border border-slate-800/70 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 p-4">
-          <p className="text-sm font-semibold">Need a quick handoff?</p>
-          <p className={`mt-1 text-sm ${isProMode ? "text-slate-400" : "text-slate-500"}`}>Jump to your conversations or keep refining your profile.</p>
-        </div>
-      </aside>
+      
 
       <div className="relative z-10 flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
         <div className="mx-auto max-w-7xl space-y-6">

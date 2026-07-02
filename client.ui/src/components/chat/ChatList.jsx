@@ -22,7 +22,7 @@ const ChatList = ({
     <div className="w-full md:w-[340px] md:flex-none h-full min-w-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col z-10 transition-colors duration-500">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 md:px-6 h-20 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md min-w-0">
+      <div className="flex items-center justify-between  px-4 md:px-6 h-20 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md min-w-0">
         <div className="flex items-center gap-2 min-w-0">
           <motion.div
             animate={{ scale: [1, 1.1, 1] }}

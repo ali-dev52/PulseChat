@@ -509,39 +509,19 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
         </div>
 
         <div className="flex items-center gap-2">
+          
+           
+          
+          
+          
           <motion.button
-            onClick={() => navigate("/dashboard")}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            title="Go to dashboard"
-            className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </motion.button>
-          <motion.button
-            onClick={handleToggleBlock}
+           onClick={handleToggleBlock}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             title={isBlocked ? "Unblock User" : "Block User"}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isBlocked ? 'text-red-500 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20' : 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'}`}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors"
           >
             <ShieldBan className="w-5 h-5" />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            title="Search"
-            className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors"
-          >
-            <Search className="w-5 h-5" />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            title="More"
-            className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors"
-          >
-            <MoreVertical className="w-5 h-5" />
           </motion.button>
         </div>
       </div>
@@ -805,8 +785,8 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
       </AnimatePresence>
 
       {/* Input */}
-      <div className="sticky bottom-0 p-4 border-t flex-shrink-0 z-20 bg-white/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 backdrop-blur-xl transition-colors duration-500">
-        <div className="flex flex-wrap items-end gap-3 max-w-5xl mx-auto relative">
+      <div className="sticky bottom-0 p-2 sm:p-4 border-t flex-shrink-0 z-20 bg-white/80 dark:bg-slate-900/80 border-slate-200 dark:border-slate-800 backdrop-blur-xl transition-colors duration-500">
+        <div className="flex flex-wrap items-end gap-2 sm:gap-3 max-w-5xl mx-auto relative">
           
           <motion.button
             onClick={() => {
@@ -817,7 +797,7 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             title="Send Pulse"
-            className="w-12 h-12 rounded-full flex items-center justify-center transition-all flex-shrink-0 text-red-500 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 hover:text-red-600 shadow-sm border border-red-500/20"
+            className="hidden sm:flex w-12 h-12 rounded-full items-center justify-center transition-all flex-shrink-0 text-red-500 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 hover:text-red-600 shadow-sm border border-red-500/20"
           >
             <span className="text-xl">🫀</span>
           </motion.button>
@@ -828,7 +808,7 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                className="absolute bottom-full mb-4 right-14 bg-white dark:bg-slate-800 shadow-2xl border border-slate-200 dark:border-slate-700 rounded-2xl p-3 w-72 grid grid-cols-5 gap-2 z-50"
+                className="absolute bottom-full mb-4 right-2 sm:right-14 bg-white dark:bg-slate-800 shadow-2xl border border-slate-200 dark:border-slate-700 rounded-2xl p-3 w-64 sm:w-72 grid grid-cols-5 gap-2 z-50"
               >
                 {["😀","😂","🥰","😎","😢","👍","❤️","🔥","🎉","✨","🤔","🙌","👏","🙏","😊","😍","😁","🙄","😜","😘"].map((emoji) => (
                   <button
@@ -908,9 +888,9 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
                   onKeyDown={handleKeyDown}
                   disabled={isBlocked}
                   placeholder={replyTo ? "Type a reply..." : isBlocked ? "Messaging is paused while this user is blocked" : "Type a message..."}
-                  className="w-full h-full py-3.5 px-6 pr-24 bg-transparent text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 text-[15px] outline-none disabled:cursor-not-allowed"
+                  className="w-full h-full py-3.5 pl-4 sm:pl-6 pr-20 sm:pr-24 bg-transparent text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 text-[15px] outline-none disabled:cursor-not-allowed"
                 />
-                <label title="Attach Image" className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer absolute right-12 z-10">
+                <label title="Attach Image" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer absolute right-10 sm:right-12 z-10">
                   <Paperclip className="w-5 h-5" />
                   <input type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
                 </label>
@@ -918,7 +898,7 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
                   onClick={() => setShowEmojiPicker((prev) => !prev)}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors absolute right-2 ${showEmojiPicker ? "text-primary-500 bg-primary-50 dark:bg-primary-500/10" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"}`}
+                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors absolute right-1 sm:right-2 ${showEmojiPicker ? "text-primary-500 bg-primary-50 dark:bg-primary-500/10" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"}`}
                 >
                   <Smile className="w-5 h-5" />
                 </motion.button>
@@ -932,7 +912,7 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
               whileTap={{ scale: 0.95 }}
               onClick={startRecording}
               title="Record Voice Note"
-              className="w-12 h-12 rounded-full flex items-center justify-center bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex-shrink-0 shadow-sm"
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex-shrink-0 shadow-sm"
             >
               <Mic className="w-5 h-5" />
             </motion.button>
@@ -943,7 +923,7 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
               onClick={handleSend}
               disabled={(!text.trim() && !audioBlob && !imageBase64) || sending || uploadingAudio || uploadingImage}
               title="Send"
-              className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-all flex-shrink-0 shadow-lg ${uploadingAudio || uploadingImage ? 'bg-primary-400 animate-pulse' : 'bg-primary-500 hover:bg-primary-600'} disabled:opacity-40 disabled:cursor-not-allowed shadow-primary-500/30`}
+              className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white transition-all flex-shrink-0 shadow-lg ${uploadingAudio || uploadingImage ? 'bg-primary-400 animate-pulse' : 'bg-primary-500 hover:bg-primary-600'} disabled:opacity-40 disabled:cursor-not-allowed shadow-primary-500/30`}
             >
               {uploadingAudio || uploadingImage ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="w-5 h-5 translate-x-0.5" />}
             </motion.button>

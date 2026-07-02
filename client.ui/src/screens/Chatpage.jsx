@@ -85,7 +85,7 @@ const Chatpage = ({ toggleDark }) => {
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-slate-50 pt-14 dark:bg-slate-950 text-slate-900 dark:text-white font-sans selection:bg-primary-500/30 transition-colors duration-500 lg:pt-0">
+    <div className="flex h-screen w-full overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-sans selection:bg-primary-500/30 transition-colors duration-500">
       {activeTab === 'Chats' ? (
         <>
           <div

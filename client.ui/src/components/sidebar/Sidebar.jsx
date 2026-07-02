@@ -1,11 +1,11 @@
 import { useAuth } from "../../context/auth";
 import { getInitials, avatarColor } from "../../utils/chat";
 import { useNavigate, useLocation } from "react-router-dom";
-import { MessageSquare, Sun, Moon, LogOut, Info, Shield, LayoutDashboard, Users } from "lucide-react";
+import { MessageSquare, Sun, Moon, LogOut, Info, Shield, LayoutDashboard, Users, Settings } from "lucide-react";
 
 const NAV = [
   { label: "Chats", path: "/", icon: MessageSquare },
-  { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+  { label: "Settings", path: "/dashboard", icon: Settings },
   { label: "About", path: "/about", icon: Info },
 ];
 
@@ -26,11 +26,9 @@ const Sidebar = ({ activeTab, onSelectTab, toggleDark, isDark }) => {
 
   return (
     <aside className="flex w-16 md:w-20 shrink-0 flex-col border-r border-slate-200/80 bg-white/85 px-1 md:px-2 py-4 shadow-[12px_0_40px_rgba(15,23,42,0.06)] backdrop-blur-2xl transition-all duration-500 dark:border-slate-800/80 dark:bg-slate-900/85 z-50">
-      <div className="flex items-center justify-center rounded-xl border border-slate-200/70 bg-slate-50/90 p-2 shadow-sm dark:border-slate-800 dark:bg-slate-800/80">
-        <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 via-blue-500 to-indigo-600 font-semibold text-white shadow-lg text-sm md:text-base">P</div>
-      </div>
+      
 
-      <div className="mt-6 flex flex-1 flex-col items-center gap-3">
+      <div className=" flex flex-1 flex-col items-center gap-3">
         {NAV.map(({ icon: Icon, label, path }) => {
           const active = isActivePath(path);
           return (

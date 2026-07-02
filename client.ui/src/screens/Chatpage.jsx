@@ -85,10 +85,14 @@ const Chatpage = ({ toggleDark }) => {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 pt-14 dark:bg-slate-950 text-slate-900 dark:text-white font-sans selection:bg-primary-500/30 transition-colors duration-500 lg:pt-0">
+    <div className="flex h-screen w-full overflow-hidden bg-slate-50 pt-14 dark:bg-slate-950 text-slate-900 dark:text-white font-sans selection:bg-primary-500/30 transition-colors duration-500 lg:pt-0">
       {activeTab === 'Chats' ? (
         <>
-          <div className={`flex h-full flex-1 md:flex-none md:w-auto min-w-0 md:shrink-0 z-20 transition-transform ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
+          <div
+            className={`w-full md:w-auto md:min-w-[320px] md:max-w-[380px] h-full shrink-0 min-w-0 z-20 transition-transform overflow-hidden ${
+              selectedChat ? 'hidden md:flex' : 'flex'
+            }`}
+          >
             <ChatList
               conversations={conversations}
               loading={loading}
@@ -98,7 +102,11 @@ const Chatpage = ({ toggleDark }) => {
               openNewChat={() => setShowNewChat(true)}
             />
           </div>
-          <div className={`flex-1 h-full min-w-0 ${!selectedChat ? 'hidden md:flex' : 'flex'}`}>
+          <div
+            className={`flex-1 h-full min-w-0 overflow-hidden ${
+              !selectedChat ? 'hidden md:flex' : 'flex'
+            }`}
+          >
             <ChatWindow
               conversation={selectedChat}
               onUserStatusChange={handleUserStatusChange}

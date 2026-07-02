@@ -19,24 +19,24 @@ const ChatList = ({
   );
 
   return (
-    <div className="flex-1 md:flex-none md:w-[340px] h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col z-10 transition-colors duration-500">
+    <div className="w-full md:w-[340px] md:flex-none h-full min-w-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col z-10 transition-colors duration-500">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 md:px-6 h-20 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-4 md:px-6 h-20 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <motion.div
             animate={{ scale: [1, 1.1, 1] }}
             transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-            className="text-red-500 text-2xl drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]"
+            className="text-red-500 text-2xl drop-shadow-[0_0_8px_rgba(239,68,68,0.8)] flex-shrink-0"
           >
             🫀
           </motion.div>
-          <span className="font-bold text-xl tracking-wide drop-shadow-sm">
+          <span className="font-bold text-xl tracking-wide drop-shadow-sm min-w-0 truncate">
             <span className="text-red-500">Pulse</span>
             <span className="text-blue-500">Chat</span>
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-shrink-0">
           <motion.button
             whileHover={{ scale: 1.1, rotate: 180 }}
             whileTap={{ scale: 0.9 }}
@@ -60,12 +60,12 @@ const ChatList = ({
       </div>
 
       {/* Search */}
-      <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
+      <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 min-w-0">
         <SearchBar value={search} onChange={setSearch} />
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar min-w-0">
         <AnimatePresence>
           {loading ? (
             <motion.div
@@ -75,12 +75,12 @@ const ChatList = ({
               className="flex flex-col gap-0"
             >
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-slate-100 dark:border-slate-800/50">
+                <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-slate-100 dark:border-slate-800/50 min-w-0">
                   <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-800 animate-pulse flex-shrink-0" />
-                  <div className="flex-1 flex flex-col gap-2">
-                    <div className="flex justify-between">
+                  <div className="flex-1 flex flex-col gap-2 min-w-0">
+                    <div className="flex justify-between min-w-0">
                       <div className="h-4 w-24 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
-                      <div className="h-3 w-10 bg-slate-100 dark:bg-slate-800/50 rounded animate-pulse" />
+                      <div className="h-3 w-10 bg-slate-100 dark:bg-slate-800/50 rounded animate-pulse flex-shrink-0" />
                     </div>
                     <div className="h-3 w-40 bg-slate-100 dark:bg-slate-800/70 rounded animate-pulse" />
                   </div>
@@ -113,6 +113,7 @@ const ChatList = ({
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05 }}
+                className="min-w-0"
               >
                 <ChatItem
                   conv={conv}

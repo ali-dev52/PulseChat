@@ -85,9 +85,6 @@ const DashboardHome = () => {
           <h1 className="text-3xl font-bold mb-2">Dashboard Overview</h1>
           <p className="text-blue-100 opacity-90">Welcome back to Pulse Admin. Here is what is happening today.</p>
           <div className="flex flex-wrap gap-3 mt-6">
-            <button onClick={() => navigate("/")} className="px-4 py-2.5 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 font-semibold flex items-center gap-2 hover:bg-white/20 transition-all">
-              Open app <ArrowRight className="w-4 h-4" />
-            </button>
             <button onClick={() => navigate("/admin/users")} className="px-4 py-2.5 rounded-xl bg-slate-950/20 border border-white/20 font-semibold flex items-center gap-2 hover:bg-slate-950/30 transition-all">
               <ShieldCheck className="w-4 h-4" /> Manage users
             </button>

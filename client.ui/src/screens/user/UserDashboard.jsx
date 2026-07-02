@@ -5,7 +5,6 @@ import { useAuth } from "../../context/auth";
 import { Baseurl } from "../../config/apis";
 import { toast } from "react-toastify";
 import { Activity, Clock, ShieldBan, User, MessageSquare, CheckCircle, ArrowRight, Sparkles, ShieldCheck, BellRing, Search, Star, TrendingUp, MessageCircleMore, Lock, LayoutDashboard, MessageSquarePlus, Settings, MoonStar, SunMedium, ChevronRight, BarChart3 } from "lucide-react";
-import ProfileModal from "../../components/profile/ProfileModal";
 
 const UserDashboard = () => {
   const [auth] = useAuth();
@@ -87,7 +86,7 @@ const UserDashboard = () => {
   };
   const quickActions = [
     { title: "Open chats", description: "Jump back into ongoing conversations", icon: MessageCircleMore, action: () => navigate("/") },
-    { title: "Edit profile", description: "Keep your profile polished and complete", icon: User, action: () => setShowProfile(true) },
+    { title: "Edit profile", description: "Keep your profile polished and complete", icon: User, action: () => navigate("/profile") },
     { title: "About app", description: "Discover the features and experience", icon: Star, action: () => navigate("/about") },
   ];
 
@@ -164,14 +163,6 @@ const UserDashboard = () => {
                   </h1>
                   <p className={`mt-1 text-sm ${isProMode ? "text-slate-400" : "text-slate-600"}`}>A focused workspace for your conversations, settings, and safety controls.</p>
                 </div>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <button onClick={() => navigate("/")} className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition hover:-translate-y-0.5 ${isProMode ? "bg-white text-slate-900" : "bg-slate-900 text-white dark:bg-white dark:text-slate-900"}`}>
-                  <MessageCircleMore className="h-4 w-4" /> Open chats
-                </button>
-                <button onClick={() => setShowProfile(true)} className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition hover:border-primary-400 hover:text-primary-600 ${isProMode ? "border-slate-700 bg-slate-800/80 text-slate-200" : "border-slate-200 bg-white/70 text-slate-700 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200"}`}>
-                  <User className="h-4 w-4" /> Edit profile
-                </button>
               </div>
             </div>
           </div>
@@ -280,7 +271,7 @@ const UserDashboard = () => {
                 <p className="mt-1">Unblock anytime and restore conversations without losing the thread.</p>
               </div>
               <div className="space-y-3">
-                {stats?.blockedUsers?.length === 0 ? (
+                {(!stats?.blockedUsers || stats.blockedUsers.length === 0) ? (
                   <div className={`flex h-32 flex-col items-center justify-center rounded-[1.25rem] border border-dashed text-center ${isProMode ? "border-slate-700 bg-slate-800/50" : "border-slate-300 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-800/50"}`}>
                     <Lock className={`mb-2 h-8 w-8 ${isProMode ? "text-slate-500" : "text-slate-400"}`} />
                     <p className={`text-sm font-medium ${isProMode ? "text-slate-400" : "text-slate-500 dark:text-slate-400"}`}>No contacts are currently blocked.</p>
@@ -308,7 +299,6 @@ const UserDashboard = () => {
           </div>
         </div>
       </div>
-      {showProfile && <ProfileModal user={auth?.User} onClose={() => setShowProfile(false)} />}
     </div>
   );
 };

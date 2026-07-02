@@ -23,6 +23,7 @@ import DashboardHome from "./screens/admin/DashboardHome"
 import UserManagement from "./screens/admin/UserManagement"
 import ChatManagement from "./screens/admin/ChatManagement"
 import UserDashboard from "./screens/user/UserDashboard"
+import Profile from "./screens/user/Profile"
 
 const Elecrto = () => {
   const [Auth] = useAuth()
@@ -68,6 +69,7 @@ const Elecrto = () => {
             <Route path="/chatpage" element={<Chatpage toggleDark={toggleDark} isDark={dark} />} />
             <Route path="/about" element={<AboutApp />} />
             <Route path="/dashboard" element={<UserDashboard />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
 
           <Route path="/login" element={<Login />} />

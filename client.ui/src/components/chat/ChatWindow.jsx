@@ -12,7 +12,6 @@ import {
 } from "../../utils/chat";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Search, MoreVertical, Paperclip, Smile, Send, Edit2, Trash2, Reply, Check, CheckCheck, AlertCircle, CornerDownRight, X, Phone, Video, Mic, Square, Trash, Image, Download, CornerUpRight, ShieldBan } from "lucide-react";
-import ProfileModal from "../profile/ProfileModal";
 import ForwardModal from "./ForwardModal";
 import AnimatedReveal from "../shared/AnimatedReveal";
 import VoicePlayer from "./VoicePlayer";
@@ -479,7 +478,7 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
           </button>
         )}
         <div
-          onClick={() => setShowProfile(true)}
+          onClick={() => navigate("/profile", { state: { user: otherUser } })}
           className="relative w-12 h-12 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
           style={{ background: bg, color: fg }}
         >
@@ -490,7 +489,7 @@ const ChatWindow = ({ conversation, onUserStatusChange, onBack }) => {
         </div>
 
         <div 
-          onClick={() => setShowProfile(true)}
+          onClick={() => navigate("/profile", { state: { user: otherUser } })}
           className="flex-1 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
         >
           <p className="text-base font-medium truncate tracking-wide text-slate-900 dark:text-white">
